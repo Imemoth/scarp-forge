@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚒ SCRAP FORGE</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --panel: #141414;
+    --panel2: #1a1a1a;
+    --border: #2a2a2a;
+    --orange: #e8621a;
+    --orange2: #ff8c42;
+    --rust: #8b3a0f;
+    --gold: #d4a017;
+    --green: #3ddc84;
+    --red: #e84040;
+    --text: #c8c0b0;
+    --text2: #7a7060;
+    --white: #f0ead8;
+    --glow: 0 0 12px #e8621a66;
+    --glow2: 0 0 20px #e8621a44;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 0%, #1a0a0033 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, #0a1a0022 0%, transparent 60%);
+  }
+
+  /* SCANLINE OVERLAY */
+  body::before {
+    content:'';
+    position:fixed; inset:0; pointer-events:none; z-index:9999;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  }
+
+  /* ── HEADER ── */
+  header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 24px;
+    background: linear-gradient(180deg, #1a1008 0%, #0d0d0d 100%);
+    border-bottom: 2px solid var(--orange);
+    box-shadow: 0 4px 24px #e8621a33;
+    position: sticky; top:0; z-index:100;
+  }
+  .logo {
+    font-family:'Orbitron',sans-serif; font-weight:900; font-size:22px;
+    color: var(--orange); letter-spacing:3px;
+    text-shadow: 0 0 16px #e8621a88;
+  }
+  .logo span { color: var(--text2); font-size:12px; font-family:'Share Tech Mono'; display:block; letter-spacing:1px; }
+  .header-stats { display:flex; gap:20px; }
+  .hstat { text-align:center; }
+  .hstat-val { font-family:'Share Tech Mono'; font-size:18px; color:var(--orange2); }
+  .hstat-lbl { font-size:11px; color:var(--text2); letter-spacing:1px; text-transform:uppercase; }
+  .day-badge {
+    background: var(--rust); padding:4px 12px; border-radius:2px;
+    font-family:'Share Tech Mono'; font-size:13px; color:var(--white);
+    border: 1px solid var(--orange);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .main { display:grid; grid-template-columns: 260px 1fr 280px; gap:0; height:calc(100vh - 61px); }
+
+  /* ── MOBILE TABS ── */
+  .mobile-tabs {
+    display:none;
+    background:var(--panel2); border-bottom:1px solid var(--border);
+    position:sticky; top:61px; z-index:99;
+  }
+  .mobile-tabs button {
+    flex:1; padding:12px 0; background:transparent; border:none;
+    font-family:'Share Tech Mono'; font-size:12px; color:var(--text2);
+    cursor:pointer; border-bottom:2px solid transparent; transition:all 0.2s;
+    letter-spacing:1px;
+  }
+  .mobile-tabs button.active { color:var(--orange); border-bottom-color:var(--orange); }
+  @media(min-width:769px) {
+    .mobile-tabs { display:none !important; }
+    .mobile-panel { display:flex !important; flex-direction:column; }
+  }
+
+  @media(max-width:768px) {
+    .main { grid-template-columns:1fr; height:auto; }
+    .mobile-tabs { display:flex; }
+    .sidebar, .pipeline-area { height:auto; min-height:0; border:none; border-bottom:1px solid var(--border); }
+    .mobile-panel { display:none !important; }
+    .mobile-panel.active { display:flex !important; flex-direction:column; }
+    .pipeline-scroll { max-height:calc(100vh - 150px); }
+    .panel-body { max-height:calc(100vh - 150px); }
+  }
+
+  /* ── SIDEBAR PANELS ── */
+  .sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .sidebar.right { border-right:none; border-left:1px solid var(--border); }
+
+  .panel-header {
+    padding: 10px 16px; background: var(--panel2);
+    border-bottom: 1px solid var(--border);
+    font-family:'Orbitron',sans-serif; font-size:11px; letter-spacing:2px;
+    color: var(--orange); text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+  }
+  .panel-header .dot { width:6px; height:6px; background:var(--orange); border-radius:50%; box-shadow:var(--glow); animation: pulse 2s infinite; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .panel-body { flex:1; overflow-y:auto; padding:12px; }
+  .panel-body::-webkit-scrollbar { width:4px; }
+  .panel-body::-webkit-scrollbar-track { background:transparent; }
+  .panel-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* ── RESOURCES ── */
+  .resource-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 10px; margin-bottom:6px;
+    background: var(--panel2); border: 1px solid var(--border); border-radius:3px;
+    transition: border-color 0.2s;
+  }
+  .resource-item:hover { border-color: var(--orange); }
+  .res-icon { font-size:20px; width:28px; text-align:center; }
+  .res-info { flex:1; padding: 0 8px; }
+  .res-name { font-size:13px; font-weight:600; color:var(--white); }
+  .res-rate { font-family:'Share Tech Mono'; font-size:10px; color:var(--green); }
+  .res-val { font-family:'Share Tech Mono'; font-size:15px; color:var(--orange2); min-width:60px; text-align:right; }
+  .res-bar { height:2px; background:var(--border); margin-top:4px; border-radius:1px; }
+  .res-bar-fill { height:100%; background:linear-gradient(90deg,var(--rust),var(--orange)); border-radius:1px; transition:width 0.4s; }
+
+  /* ── PIPELINE ── */
+  .pipeline-area {
+    background: var(--bg);
+    display:flex; flex-direction:column; overflow:hidden;
+    position:relative;
+  }
+  .pipeline-title {
+    padding:12px 24px; background:var(--panel2);
+    border-bottom:1px solid var(--border);
+    font-family:'Orbitron',sans-serif; font-size:11px; color:var(--text2); letter-spacing:2px;
+  }
+  .pipeline-scroll { flex:1; overflow-y:auto; padding:20px 16px; }
+  .pipeline-scroll::-webkit-scrollbar { width:4px; }
+  .pipeline-scroll::-webkit-scrollbar-thumb { background:var(--border); }
+
+  /* ── STATION CANVAS ── */
+  .station-anim {
+    position:absolute; right:0; top:0; bottom:0;
+    width:200px; height:100% !important; pointer-events:none; opacity:0.18;
+    transition: opacity 0.5s;
+  }
+  .station.active   .station-anim { opacity:0.55; }
+  .station.complete .station-anim { opacity:0.25; }
+  .station.locked   .station-anim { opacity:0.06; }
+
+  /* ── STATION ── */
+  .station-wrapper {
+    display:flex; align-items:center; margin-bottom:4px;
+  }
+  .station {
+    flex:1;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius:4px;
+    padding:14px 16px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    position: relative; overflow:hidden;
+    cursor:pointer;
+    user-select:none;
+  }
+  .station::before {
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background: var(--border); transition: background 0.3s;
+  }
+  .station.active::before { background: var(--orange); box-shadow: var(--glow); }
+  .station.active { border-color: var(--orange); box-shadow: 0 0 16px #e8621a22; }
+  .station.complete::before { background: var(--green); }
+  .station.complete { border-color: #3ddc8455; }
+  .station.locked { opacity:0.45; cursor:not-allowed; }
+
+  .station-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .station-icon { font-size:28px; line-height:1; }
+  .station-meta { flex:1; }
+  .station-name { font-family:'Orbitron',sans-serif; font-size:12px; font-weight:700; color:var(--white); letter-spacing:1px; }
+  .station-sub { font-size:11px; color:var(--text2); font-family:'Share Tech Mono'; margin-top:1px; }
+  .station-badge {
+    font-family:'Share Tech Mono'; font-size:10px; padding:2px 7px;
+    border-radius:2px; border:1px solid var(--border); color:var(--text2);
+  }
+  .station-badge.running { border-color:var(--orange); color:var(--orange); background:#e8621a11; }
+  .station-badge.done { border-color:var(--green); color:var(--green); background:#3ddc8411; }
+  .station-badge.locked { color:var(--text2); }
+
+  /* PROGRESS BAR */
+  .prog-wrap { position:relative; height:8px; background:var(--border); border-radius:4px; overflow:hidden; margin-bottom:8px; }
+  .prog-fill {
+    height:100%; border-radius:4px; transition: width 0.1s linear;
+    background: linear-gradient(90deg, var(--rust) 0%, var(--orange) 60%, var(--orange2) 100%);
+    position:relative;
+  }
+  .prog-fill::after {
+    content:''; position:absolute; right:0; top:0; bottom:0; width:20px;
+    background: linear-gradient(90deg, transparent, #ffffff33);
+    animation: shimmer 1s infinite;
+  }
+  @keyframes shimmer { 0%{opacity:0} 50%{opacity:1} 100%{opacity:0} }
+  .prog-label { display:flex; justify-content:space-between; font-family:'Share Tech Mono'; font-size:10px; color:var(--text2); }
+
+  /* PARTICLES */
+  .particle-canvas { position:absolute; inset:0; pointer-events:none; }
+
+  /* SLOTS */
+  .station-slots { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .slot {
+    width:36px; height:36px; border:1px dashed var(--border); border-radius:3px;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+    background:var(--panel2); transition:all 0.2s; position:relative;
+  }
+  .slot.filled { border-color:var(--orange); border-style:solid; background:#1a0e00; }
+  .slot.filled::after {
+    content:''; position:absolute; inset:0; border-radius:3px;
+    box-shadow: inset 0 0 8px #e8621a33;
+  }
+  .slot.output { border-color:var(--green); border-style:solid; background:#001a08; }
+
+  /* ARROW CONNECTOR */
+  .arrow-connector {
+    display:flex; flex-direction:column; align-items:center; padding:4px 0;
+    color:var(--border); font-size:14px; position:relative;
+  }
+  .arrow-line { width:2px; height:16px; background:var(--border); }
+  .arrow-line.active { background:linear-gradient(180deg,var(--orange),var(--orange2)); box-shadow:0 0 6px var(--orange); animation:flowDown 0.6s infinite; }
+  @keyframes flowDown { 0%{opacity:0.4} 50%{opacity:1} 100%{opacity:0.4} }
+  .arrow-head { font-size:10px; color:var(--border); line-height:1; }
+  .arrow-head.active { color:var(--orange); }
+
+  /* BOTTLENECK WARNING */
+  .bottleneck-warn {
+    position:absolute; right:10px; top:10px;
+    font-family:'Share Tech Mono'; font-size:10px; color:var(--red);
+    background:#1a0000; border:1px solid var(--red); padding:2px 6px; border-radius:2px;
+    animation:blink 1s infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* CRAFT BUTTON */
+  .craft-btn {
+    width:100%; padding:16px; margin-top:10px;
+    background:linear-gradient(135deg, var(--rust), var(--orange));
+    border:none; border-radius:4px; color:var(--white); font-family:'Orbitron',sans-serif;
+    font-size:14px; font-weight:700; letter-spacing:2px; cursor:pointer;
+    transition:all 0.2s; box-shadow:0 2px 12px #e8621a44;
+    min-height:52px; touch-action:manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .craft-btn:hover:not(:disabled) { box-shadow:var(--glow2); filter:brightness(1.1); }
+  .craft-btn:active:not(:disabled) { transform:scale(0.98); }
+  .craft-btn:disabled { opacity:0.35; cursor:not-allowed; background:var(--panel2); box-shadow:none; color:var(--text2); }
+
+  .upgrade-btn {
+    padding:10px 14px; background:transparent; border:1px solid var(--border);
+    color:var(--text2); font-family:'Share Tech Mono'; font-size:11px; cursor:pointer;
+    border-radius:2px; transition:all 0.2s; white-space:nowrap;
+    min-height:40px; touch-action:manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .upgrade-btn:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); }
+  .upgrade-btn:active:not(:disabled) { transform:scale(0.96); }
+  .upgrade-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+  /* ── ORDER QUEUE ── */
+  .order-item {
+    background:var(--panel2); border:1px solid var(--border); border-radius:3px;
+    padding:10px; margin-bottom:8px; transition:all 0.2s; position:relative; overflow:hidden;
+    cursor:grab;
+  }
+  .order-item:hover { border-color:var(--orange); }
+  .order-item.vip { border-color:var(--gold); }
+  .order-item.vip::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--gold); }
+  .order-item.urgent { border-color:var(--red); }
+  .order-item.urgent::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--red); }
+  .order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+  .order-faction { font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:1px; }
+  .order-type-badge { font-family:'Share Tech Mono'; font-size:9px; padding:1px 5px; border-radius:2px; }
+  .badge-vip { background:#1a1400; color:var(--gold); border:1px solid var(--gold); }
+  .badge-urgent { background:#1a0000; color:var(--red); border:1px solid var(--red); }
+  .badge-normal { background:var(--border); color:var(--text2); border:1px solid var(--border); }
+  .order-product { font-size:14px; font-weight:700; color:var(--white); margin-bottom:4px; }
+  .order-reward { font-family:'Share Tech Mono'; font-size:12px; color:var(--gold); }
+  .order-timer {
+    height:3px; background:var(--border); margin-top:8px; border-radius:1px;
+  }
+  .order-timer-fill { height:100%; border-radius:1px; transition:width 0.5s linear; }
+  .timer-normal { background:var(--green); }
+  .timer-urgent { background:linear-gradient(90deg,var(--green),var(--gold)); }
+  .timer-vip { background:linear-gradient(90deg,var(--red),var(--gold)); }
+  .order-time-left { font-family:'Share Tech Mono'; font-size:10px; color:var(--text2); margin-top:3px; text-align:right; }
+
+  .fulfill-btn {
+    width:100%; padding:14px; margin-top:6px;
+    background:transparent; border:1px solid var(--green);
+    color:var(--green); font-family:'Share Tech Mono'; font-size:13px; cursor:pointer;
+    border-radius:3px; transition:all 0.2s; letter-spacing:1px;
+    min-height:48px; touch-action:manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .fulfill-btn:hover { background:#3ddc8422; }
+  .fulfill-btn:active { transform:scale(0.98); }
+  .fulfill-btn:disabled { opacity:0.3; cursor:not-allowed; border-color:var(--border); color:var(--text2); }
+
+  /* QUALITY INDICATOR */
+  .quality-pill {
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:'Share Tech Mono'; font-size:10px; padding:2px 7px;
+    border-radius:10px; border:1px solid;
+  }
+  .q-junk { color:#ff4444; border-color:#ff4444; background:#1a0000; }
+  .q-std { color:var(--text2); border-color:var(--border); background:var(--panel2); }
+  .q-good { color:#7fff7f; border-color:#3ddc84; background:#001a08; }
+  .q-master { color:var(--gold); border-color:var(--gold); background:#1a1400; animation:goldGlow 2s infinite; }
+  @keyframes goldGlow { 0%,100%{box-shadow:0 0 4px #d4a01744} 50%{box-shadow:0 0 10px #d4a01788} }
+
+  /* SECTION DIVIDER */
+  .section-div {
+    font-family:'Share Tech Mono'; font-size:10px; color:var(--text2); letter-spacing:2px;
+    text-transform:uppercase; padding:8px 0 4px; border-top:1px solid var(--border);
+    margin-top:8px;
+  }
+
+  /* TOAST */
+  #toast-container { position:fixed; bottom:20px; right:300px; z-index:9998; display:flex; flex-direction:column-reverse; gap:8px; }
+  .toast {
+    background:var(--panel); border:1px solid var(--orange); border-radius:3px;
+    padding:8px 14px; font-family:'Share Tech Mono'; font-size:12px; color:var(--orange);
+    box-shadow:var(--glow2); animation:toastIn 0.3s ease;
+    max-width:280px;
+  }
+  .toast.success { border-color:var(--green); color:var(--green); }
+  .toast.warn { border-color:var(--red); color:var(--red); }
+  @keyframes toastIn { from{transform:translateX(20px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+  /* SPARK ANIMATION */
+  @keyframes sparkFly {
+    0% { transform: translate(0,0) scale(1); opacity:1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity:0; }
+  }
+  .spark {
+    position:absolute; width:4px; height:4px; border-radius:50%;
+    background:var(--orange2); pointer-events:none;
+    animation: sparkFly 0.6s ease-out forwards;
+  }
+
+  /* UPGRADE PANEL */
+  .upgrade-item {
+    padding:10px; background:var(--panel2); border:1px solid var(--border); border-radius:3px;
+    margin-bottom:6px; transition:border-color 0.2s;
+  }
+  .upgrade-item:hover { border-color:var(--orange); }
+  .upg-name { font-size:13px; font-weight:700; color:var(--white); margin-bottom:2px; }
+  .upg-desc { font-size:11px; color:var(--text2); margin-bottom:6px; }
+  .upg-cost { font-family:'Share Tech Mono'; font-size:12px; color:var(--gold); }
+  .upg-footer { display:flex; justify-content:space-between; align-items:center; }
+
+  /* SCRAP QUALITY MINI */
+  .scrap-quality-bar { display:flex; gap:3px; margin-top:6px; }
+  .sq-seg { flex:1; height:5px; border-radius:1px; opacity:0.4; }
+  .sq-seg.active { opacity:1; }
+
+
+
+  /* PIXEL ICONS using text/emoji */
+  .px { image-rendering:pixelated; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⚒ SCRAP FORGE <span>POST-APOCALYPTIC SMITHY v0.1</span></div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="hstat-val" id="hstat-gold">0</div><div class="hstat-lbl">☗ Arany</div></div>
+    <div class="hstat"><div class="hstat-val" id="hstat-crafted">0</div><div class="hstat-lbl">⚒ Kész</div></div>
+    <div class="hstat"><div class="hstat-val" id="hstat-rep">0</div><div class="hstat-lbl">★ Reputa.</div></div>
+  </div>
+  <div class="day-badge" id="day-badge">NAP 1 — HAJNAL</div>
+</header>
+
+<div class="mobile-tabs">
+  <button onclick="showTab('resources')" id="tab-resources" class="active">🔩 ANYAGOK</button>
+  <button onclick="showTab('pipeline')" id="tab-pipeline">⚒ PIPELINE</button>
+  <button onclick="showTab('orders')" id="tab-orders">📋 MEGRENDELÉSEK</button>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Resources + Upgrades -->
+  <div class="sidebar mobile-panel active" id="panel-resources">
+    <div class="panel-header"><div class="dot"></div>NYERSANYAGOK</div>
+    <div class="panel-body">
+      <div id="resource-list"></div>
+      <div class="section-div">★ FEJLESZTÉSEK</div>
+      <div id="upgrade-list"></div>
+    </div>
+  </div>
+
+  <!-- CENTER: Pipeline -->
+  <div class="pipeline-area mobile-panel" id="panel-pipeline">
+    <div class="pipeline-title">⬡ KOVÁCSMŰHELY PIPELINE — kattints az állomásra a kovácsoláshoz</div>
+    <div class="pipeline-scroll" id="pipeline-container">
+      <!-- stations rendered by JS -->
+    </div>
+  </div>
+
+  <!-- RIGHT: Order Queue -->
+  <div class="sidebar right mobile-panel" id="panel-orders">
+    <div class="panel-header"><div class="dot"></div>MEGRENDELÉSEK</div>
+    <div class="panel-body" id="order-list">
+      <!-- orders rendered by JS -->
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════
+var G = {
+  gold: 150,
+  reputation: 0,
+  totalCrafted: 0,
+  day: 1,
+  dayTime: 0,
+  tick: 0,
+
+  resources: {
+    scrap:  { name:'Fémhulladék', icon:'🔩', val:20, max:200, quality:45, baseRate:0.15 },
+    coal:   { name:'Szén/Koksz',  icon:'🪨', val:15, max:150, quality:60, baseRate:0.06 },
+    wood:   { name:'Fa / Nyél',   icon:'🪵', val:10, max:100, quality:55, baseRate:0.04 },
+    binder: { name:'Szurok',      icon:'⬛', val:5,  max:80,  quality:50, baseRate:0.015 }
+  },
+
+  stations: [
+    { id:'smelter',  name:'OLVASZTÓ',         icon:'🔥', sub:'Scrap → Fémtömb',       locked:false, active:false, progress:0, progressMax:3000,  inputSlots:[null,null], outputSlots:[null],      inputReq:{scrap:5,coal:2},        outputItem:{name:'Fémtömb',icon:'🧱',quality:0},           description:'3s', bottleneck:false },
+    { id:'anvil',    name:'KOVÁCSÁLLVÁNY',     icon:'⚒', sub:'Fémtömb → Alkatrész',   locked:false, active:false, progress:0, progressMax:8000,  inputSlots:[null,null], outputSlots:[null,null], inputReq:{ingot:1},               outputItem:{name:'Alkatrész',icon:'⚙️',quality:0},         description:'8s', bottleneck:false },
+    { id:'grinder',  name:'CSISZOLÓ / EDZŐ',  icon:'⚡', sub:'Alkatrész → Edzett',    locked:true,  active:false, progress:0, progressMax:14000, inputSlots:[null],       outputSlots:[null],      inputReq:{part:1},                outputItem:{name:'Edzett rész',icon:'🗡️',quality:0},        description:'14s', bottleneck:false },
+    { id:'assembly', name:'ÖSSZESZERELÓ',      icon:'🔧', sub:'Edzett + Nyél → Termék',locked:true,  active:false, progress:0, progressMax:22000, inputSlots:[null,null], outputSlots:[null,null], inputReq:{hardened:1,wood:2},     outputItem:{name:'Kész Fegyver',icon:'⚔️',quality:0},      description:'22s', bottleneck:false },
+    { id:'qc',       name:'QC ÁLLOMÁS',        icon:'🔍', sub:'Minőség ellenőrzés',    locked:true,  active:false, progress:0, progressMax:10000, inputSlots:[null],       outputSlots:[null],      inputReq:{product:1},             outputItem:{name:'Ellenőrzött',icon:'✅',quality:0},        description:'10s', bottleneck:false }
+  ],
+
+  inventory: { ingot:0, part:0, hardened:0, product:0 },
+  orders: [],
+  orderIdCounter: 0,
+  maxOrderSlots: 2,
+
+  upgrades: [
+    { id:'u_sm1', name:'Jobb Olvasztótégely', desc:'Olvasztó: -30% idő',         cost:80,   bought:false, station:'smelter',  effect:'stationSpeed', target:'smelter',  mult:0.7 },
+    { id:'u_sm2', name:'Dupla Olvasztó',      desc:'Olvasztó: -25% idő',         cost:250,  bought:false, station:'smelter',  effect:'stationSpeed', target:'smelter',  mult:0.75 },
+    { id:'u_sm3', name:'Automata Adagoló',    desc:'Olvasztó: -20% idő',         cost:600,  bought:false, station:'smelter',  effect:'stationSpeed', target:'smelter',  mult:0.8 },
+    { id:'u_an1', name:'Acél Kalapács',       desc:'Állvány: -25% idő',          cost:150,  bought:false, station:'anvil',    effect:'stationSpeed', target:'anvil',    mult:0.75 },
+    { id:'u_an2', name:'Rugós Ütőmű',         desc:'Állvány: -25% idő',          cost:400,  bought:false, station:'anvil',    effect:'stationSpeed', target:'anvil',    mult:0.75 },
+    { id:'u_an3', name:'Gőzkalapács',         desc:'Állvány: -30% idő',          cost:900,  bought:false, station:'anvil',    effect:'stationSpeed', target:'anvil',    mult:0.7 },
+    { id:'u3',    name:'Csiszoló Felold',     desc:'Csiszoló aktiválása',         cost:200,  bought:false, station:null,       effect:'unlockGrinder' },
+    { id:'u_gr1', name:'Durvább Csiszolókő',  desc:'Csiszoló: -30% idő',         cost:350,  bought:false, station:'grinder',  effect:'stationSpeed', target:'grinder',  mult:0.7 },
+    { id:'u_gr2', name:'Elektromos Edző',     desc:'Csiszoló: -30% idő',         cost:750,  bought:false, station:'grinder',  effect:'stationSpeed', target:'grinder',  mult:0.7 },
+    { id:'u6',    name:'Összeszereló Felold', desc:'Összeszereló aktiválása',     cost:400,  bought:false, station:null,       effect:'unlockAssembly' },
+    { id:'u_as1', name:'Szerelőpad Bővítés',  desc:'Összeszereló: -20% idő',     cost:500,  bought:false, station:'assembly', effect:'stationSpeed', target:'assembly', mult:0.8 },
+    { id:'u_as2', name:'Jig & Fixture Szett', desc:'Összeszereló: -25% idő',     cost:1100, bought:false, station:'assembly', effect:'stationSpeed', target:'assembly', mult:0.75 },
+    { id:'u8',    name:'QC Állomás Felold',   desc:'QC aktiválása',               cost:600,  bought:false, station:null,       effect:'unlockQC' },
+    { id:'u_qc1', name:'Mérőeszköz Csomag',   desc:'QC: -30% idő',               cost:700,  bought:false, station:'qc',       effect:'stationSpeed', target:'qc',       mult:0.7 },
+    { id:'u_g1',  name:'Scrap Szorter',       desc:'+10% scrap minőség',         cost:250,  bought:false, station:null,       effect:'scrapQuality' },
+    { id:'u_g2',  name:'Raktár Bővítés',      desc:'Összes max +50%',             cost:300,  bought:false, station:null,       effect:'storageUp' },
+    { id:'u_g3',  name:'Extra Szénbehordó',   desc:'+0.3 szén/min',              cost:120,  bought:false, station:null,       effect:'coalRate' },
+    { id:'u_g4',  name:'Mesterkovács Oktatás',desc:'+15% összes minőség',        cost:800,  bought:false, station:null,       effect:'allQuality' },
+    { id:'u_os1', name:'3. Vevő Slot',        desc:'Max 3 megrendelés',          cost:180,  bought:false, station:null,       effect:'orderSlot' },
+    { id:'u_os2', name:'4. Vevő Slot',        desc:'Max 4 megrendelés',          cost:380,  bought:false, station:null,       effect:'orderSlot' },
+    { id:'u_os3', name:'5. Vevő Slot',        desc:'Max 5 megrendelés',          cost:650,  bought:false, station:null,       effect:'orderSlot' },
+    { id:'u_os4', name:'6. Vevő Slot',        desc:'Max 6 megrendelés',          cost:1000, bought:false, station:null,       effect:'orderSlot' }
+  ],
+
+  multipliers: {
+    smelterSpeed:1, anvilSpeed:1, grinderSpeed:1, assemblySpeed:1, qcSpeed:1,
+    scrapQuality:0, allQuality:0
+  }
+};
+
+// ═══════════════════════════════════════════════
+// ORDER TEMPLATES  (minRep = szükséges hírnév)
+// ═══════════════════════════════════════════════
+var ORDER_TEMPLATES = [
+  // ALAP (rep 0+)
+  { faction:'Kéregmanók', product:'Fémtömb',       icon:'🧱', type:'normal', reward:12, timeLimit:900,  needs:'ingot',    minRep:0,  qty:[1,3] },
+  { faction:'Kéregmanók', product:'Alkatrész',     icon:'⚙️', type:'normal', reward:18, timeLimit:1200, needs:'part',     minRep:0,  qty:[1,4] },
+  { faction:'Vasbosszú',  product:'Fémtömb',       icon:'🧱', type:'normal', reward:12, timeLimit:800,  needs:'ingot',    minRep:0,  qty:[2,5] },
+  { faction:'Acélkarmok', product:'Alkatrész',     icon:'⚙️', type:'normal', reward:18, timeLimit:1000, needs:'part',     minRep:0,  qty:[1,3] },
+  { faction:'Kéregmanók', product:'Scrap ékszer',  icon:'💍', type:'normal', reward:15, timeLimit:1800, needs:'ingot',    minRep:0,  qty:[2,4] },
+  { faction:'Acélkarmok', product:'Csavar csomag', icon:'🔩', type:'normal', reward:10, timeLimit:1500, needs:'ingot',    minRep:0,  qty:[3,5] },
+  // KÖZÉP (rep 10+)
+  { faction:'Vasbosszú',  product:'Lándzsa hegy',  icon:'🗡️', type:'urgent', reward:55, timeLimit:400,  needs:'hardened', minRep:10, qty:[1,2] },
+  { faction:'Acélkarmok', product:'Csákány fej',   icon:'⛏️', type:'normal', reward:40, timeLimit:900,  needs:'hardened', minRep:10, qty:[1,3] },
+  { faction:'Kéregmanók', product:'Kulcscsomó',    icon:'🔑', type:'normal', reward:30, timeLimit:1200, needs:'part',     minRep:10, qty:[2,4] },
+  { faction:'Vasbosszú',  product:'Edzett csat',   icon:'🪝', type:'urgent', reward:65, timeLimit:350,  needs:'hardened', minRep:10, qty:[1,2] },
+  // HALADÓ (rep 25+)
+  { faction:'Acélkarmok', product:'Kard',          icon:'⚔️', type:'normal', reward:70, timeLimit:600,  needs:'product',  minRep:25, qty:[1,2] },
+  { faction:'Kéregmanók', product:'Csákány',       icon:'⛏️', type:'normal', reward:55, timeLimit:800,  needs:'product',  minRep:25, qty:[1,3] },
+  { faction:'Vasbosszú',  product:'Tomahawk',      icon:'🪓', type:'urgent', reward:90, timeLimit:300,  needs:'product',  minRep:25, qty:[1,2] },
+  // VIP (rep 50+)
+  { faction:'Acélkarmok', product:'Páncél darab',  icon:'🛡️', type:'vip',    reward:180,timeLimit:240,  needs:'product',  minRep:50, qty:[1,2] },
+  { faction:'Acélkarmok', product:'Kézigránát tok',icon:'💣', type:'vip',    reward:220,timeLimit:180,  needs:'product',  minRep:50, qty:[1,1] },
+  { faction:'Vasbosszú',  product:'Harci szekerce',icon:'🪓', type:'vip',    reward:200,timeLimit:200,  needs:'product',  minRep:50, qty:[1,2] }
+];
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function getQuality(base) {
+  var q = Math.min(100, base + G.multipliers.allQuality * 15 + Math.floor(Math.random()*20) - 5);
+  return Math.max(5, q);
+}
+function qualityLabel(q) {
+  if(q < 31) return { label:'Selejt',     cls:'q-junk' };
+  if(q < 61) return { label:'Standard',   cls:'q-std' };
+  if(q < 86) return { label:'Jó',         cls:'q-good' };
+  return            { label:'Mestermű ✦', cls:'q-master' };
+}
+function qualityMult(q) {
+  if(q < 31) return 0.6;
+  if(q < 61) return 1.0;
+  if(q < 86) return 1.25;
+  return 1.6;
+}
+function getInvCount(needs) {
+  var inv = G.inventory;
+  if(needs==='product')  return inv.product;
+  if(needs==='hardened') return inv.hardened;
+  if(needs==='part')     return inv.part;
+  if(needs==='ingot')    return inv.ingot;
+  return 0;
+}
+function consumeInv(needs, qty) {
+  var inv = G.inventory;
+  if(needs==='product')  inv.product  -= qty;
+  if(needs==='hardened') inv.hardened -= qty;
+  if(needs==='part')     inv.part     -= qty;
+  if(needs==='ingot')    inv.ingot    -= qty;
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+function toast(msg, type) {
+  var el = document.createElement('div');
+  el.className = 'toast ' + (type||'');
+  el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3000);
+}
+
+// ═══════════════════════════════════════════════
+// SPARKS
+// ═══════════════════════════════════════════════
+function sparks(el) {
+  var rect = el.getBoundingClientRect();
+  for(var i=0;i<8;i++) {
+    var s = document.createElement('div');
+    s.className = 'spark';
+    var angle = (Math.PI*2/8)*i;
+    var dist = 30+Math.random()*40;
+    s.style.cssText = 'left:'+( rect.left+rect.width/2)+'px;top:'+(rect.top+rect.height/2)+'px;--dx:'+(Math.cos(angle)*dist)+'px;--dy:'+(Math.sin(angle)*dist)+'px;position:fixed;z-index:9997;';
+    document.body.appendChild(s);
+    setTimeout(function(){ s.remove(); }, 700);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MOBILE TABS
+// ═══════════════════════════════════════════════
+function showTab(tab) {
+  ['resources','pipeline','orders'].forEach(function(t) {
+    document.getElementById('panel-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// SPAWN ORDER
+// ═══════════════════════════════════════════════
+function spawnOrder(forceFaction) {
+  if(G.orders.length >= G.maxOrderSlots) return;
+  var pool = ORDER_TEMPLATES.filter(function(t){ return G.reputation >= t.minRep; });
+  if(!pool.length) pool = ORDER_TEMPLATES.filter(function(t){ return t.minRep === 0; });
+  if(forceFaction) {
+    var fp = pool.filter(function(t){ return t.faction === forceFaction; });
+    if(fp.length && Math.random() < 0.7) pool = fp;
+  }
+  var tmpl = pool[Math.floor(Math.random()*pool.length)];
+  var qty = tmpl.qty[0] + Math.floor(Math.random()*(tmpl.qty[1]-tmpl.qty[0]+1));
+  var totalMs = (tmpl.timeLimit + (qty-1)*Math.floor(tmpl.timeLimit*0.3))*1000;
+  G.orders.push({
+    faction:   tmpl.faction,
+    product:   tmpl.product,
+    icon:      tmpl.icon,
+    type:      tmpl.type,
+    needs:     tmpl.needs,
+    minRep:    tmpl.minRep,
+    id:        ++G.orderIdCounter,
+    qty:       qty,
+    qtyDelivered: 0,
+    reward:    tmpl.reward * qty,
+    timeLeft:  totalMs,
+    totalTime: totalMs
+  });
+  needFullRender.orders = true;
+}
+
+// ═══════════════════════════════════════════════
+// CRAFT STATION
+// ═══════════════════════════════════════════════
+function craftStation(sid) {
+  var s = G.stations.filter(function(x){ return x.id===sid; })[0];
+  if(!s || s.locked || s.active) return;
+  var res = G.resources, inv = G.inventory;
+  if(sid==='smelter') {
+    if(res.scrap.val < s.inputReq.scrap || res.coal.val < s.inputReq.coal) { toast('Nincs elég nyersanyag!','warn'); return; }
+    res.scrap.val -= s.inputReq.scrap;
+    res.coal.val  -= s.inputReq.coal;
+    s.outputItem.quality = getQuality(res.scrap.quality + G.multipliers.scrapQuality*10);
+  } else if(sid==='anvil') {
+    if(inv.ingot < 1) { toast('Nincs fémtömb!','warn'); return; }
+    inv.ingot--;
+    s.outputItem.quality = getQuality(65);
+  } else if(sid==='grinder') {
+    if(inv.part < 1) { toast('Nincs alkatrész!','warn'); return; }
+    inv.part--;
+    s.outputItem.quality = getQuality(70);
+  } else if(sid==='assembly') {
+    if(inv.hardened < 1 || res.wood.val < 2) { toast('Hiányzó anyagok!','warn'); return; }
+    inv.hardened--;
+    res.wood.val -= 2;
+    s.outputItem.quality = getQuality(75);
+  } else if(sid==='qc') {
+    if(inv.product < 1) { toast('Nincs kész termék!','warn'); return; }
+    inv.product--;
+    s.outputItem.quality = getQuality(80);
+  }
+  s.active = true;
+  s.progress = 0;
+}
+
+// ═══════════════════════════════════════════════
+// FULFILL ORDER
+// ═══════════════════════════════════════════════
+function fulfillOrder(id) {
+  var order = null;
+  for(var i=0;i<G.orders.length;i++) { if(G.orders[i].id===id){ order=G.orders[i]; break; } }
+  if(!order) return;
+  var available = getInvCount(order.needs);
+  var stillNeeds = order.qty - order.qtyDelivered;
+  var qtyNow = Math.min(available, stillNeeds);
+  if(qtyNow <= 0) { toast('Nincs megfelelő termék!','warn'); return; }
+  consumeInv(order.needs, qtyNow);
+  order.qtyDelivered += qtyNow;
+  if(order.qtyDelivered < order.qty) {
+    toast('+'+qtyNow+' leadva ('+order.qtyDelivered+'/'+order.qty+') - '+order.product);
+    needFullRender.orders = true;
+    return;
+  }
+  // teljes teljesítés
+  var timerRatio = order.timeLeft / order.totalTime;
+  var earned = Math.floor(order.reward * (timerRatio > 0.5 ? 1.2 : 1.0));
+  G.gold += earned;
+  G.reputation += order.type==='vip' ? 15 : order.type==='urgent' ? 7 : 3;
+  G.totalCrafted++;
+  var faction = order.faction;
+  G.orders = G.orders.filter(function(o){ return o.id!==id; });
+  var delay = order.type==='vip' ? 0 : order.type==='urgent' ? 5000 : 15000;
+  if(delay===0) { spawnOrder(faction); }
+  else { setTimeout(function(){ spawnOrder(faction); }, delay); }
+  toast('✓ '+order.product+' kész! +'+earned+' arany','success');
+  needFullRender.orders = true;
+}
+
+// ═══════════════════════════════════════════════
+// BUY UPGRADE
+// ═══════════════════════════════════════════════
+function buyUpgrade(uid) {
+  var u = null;
+  for(var i=0;i<G.upgrades.length;i++){ if(G.upgrades[i].id===uid){ u=G.upgrades[i]; break; } }
+  if(!u || u.bought || G.gold < u.cost) { toast('Nincs elég arany!','warn'); return; }
+  G.gold -= u.cost;
+  u.bought = true;
+  if(u.effect==='stationSpeed') {
+    var key = u.target+'Speed';
+    G.multipliers[key] = (G.multipliers[key]||1) * u.mult;
+  }
+  if(u.effect==='coalRate')     G.resources.coal.baseRate += 0.005;
+  if(u.effect==='scrapQuality') G.multipliers.scrapQuality = (G.multipliers.scrapQuality||0)+1;
+  if(u.effect==='storageUp')    { for(var k in G.resources){ G.resources[k].max = Math.floor(G.resources[k].max*1.5); } }
+  if(u.effect==='allQuality')   G.multipliers.allQuality = (G.multipliers.allQuality||0)+1;
+  if(u.effect==='orderSlot')    { G.maxOrderSlots++; spawnOrder(); }
+  if(u.effect==='unlockGrinder')  { G.stations[2].locked=false; toast('Csiszoló feloldva!'); }
+  if(u.effect==='unlockAssembly') { G.stations[3].locked=false; toast('Összeszereló feloldva!'); }
+  if(u.effect==='unlockQC')       { G.stations[4].locked=false; toast('QC Állomás feloldva!'); }
+  toast(u.name+' megvásárolva!','success');
+  needFullRender.upgrades = true;
+  needFullRender.pipeline = true;
+}
+
+// ═══════════════════════════════════════════════
+// RENDER FUNCTIONS
+// ═══════════════════════════════════════════════
+function renderHeader() {
+  document.getElementById('hstat-gold').textContent    = Math.floor(G.gold).toLocaleString();
+  document.getElementById('hstat-crafted').textContent = G.totalCrafted;
+  document.getElementById('hstat-rep').textContent     = G.reputation;
+  var hour = Math.floor((G.dayTime/1440)*24);
+  var timeStr = hour < 6 ? 'HAJNAL' : hour < 12 ? 'REGGEL' : hour < 18 ? 'DÉLUTÁN' : 'ESTE';
+  document.getElementById('day-badge').textContent = 'NAP '+G.day+' — '+timeStr;
+}
+
+function renderResources() {
+  var c = document.getElementById('resource-list');
+  var html = '';
+  for(var key in G.resources) {
+    var r = G.resources[key];
+    var pct = Math.min(100,(r.val/r.max)*100);
+    var ql = qualityLabel(r.quality);
+    html += '<div class="resource-item">'
+      +'<div class="res-icon">'+r.icon+'</div>'
+      +'<div class="res-info">'
+        +'<div class="res-name">'+r.name+'</div>'
+        +'<div class="res-rate">+'+(r.baseRate*60).toFixed(1)+'/min'
+          +' <span class="quality-pill '+ql.cls+'" style="font-size:9px;padding:1px 4px;border-radius:8px">'+ql.label+'</span></div>'
+        +'<div class="res-bar"><div class="res-bar-fill" id="res-bar-'+key+'" style="width:'+pct+'%"></div></div>'
+      +'</div>'
+      +'<div class="res-val" id="res-val-'+key+'">'+Math.floor(r.val)+'</div>'
+      +'</div>';
+  }
+  html += '<div class="section-div">🧱 RAKTÁR</div>';
+  var items = [{n:'Fémtömb',ic:'🧱',k:'ingot'},{n:'Alkatrész',ic:'⚙️',k:'part'},{n:'Edzett rész',ic:'🗡️',k:'hardened'},{n:'Kész termék',ic:'⚔️',k:'product'}];
+  for(var i=0;i<items.length;i++) {
+    var it = items[i], v = G.inventory[it.k];
+    html += '<div class="resource-item">'
+      +'<div class="res-icon">'+it.ic+'</div>'
+      +'<div class="res-info"><div class="res-name">'+it.n+'</div></div>'
+      +'<div class="res-val" id="inv-val-'+it.k+'" style="color:'+(v>0?'var(--orange2)':'var(--text2)')+'">'+v+'</div>'
+      +'</div>';
+  }
+  c.innerHTML = html;
+}
+
+function renderUpgrades() {
+  var c = document.getElementById('upgrade-list');
+  var remaining = G.upgrades.filter(function(u){ return !u.bought; });
+  if(!remaining.length) { c.innerHTML = '<div style="color:var(--text2);font-size:12px;text-align:center;padding:20px">✓ Minden fejlesztés megvásárolva!</div>'; return; }
+  var groups = [
+    {key:'smelter',  label:'🔥 Olvasztó'},
+    {key:'anvil',    label:'⚒ Kovácsállvány'},
+    {key:'grinder',  label:'⚡ Csiszoló'},
+    {key:'assembly', label:'🔧 Összeszereló'},
+    {key:'qc',       label:'🔍 QC Állomás'},
+    {key:'orders',   label:'📋 Megrendelés Slotok'},
+    {key:null,       label:'⬡ Globális'}
+  ];
+  var html = '';
+  for(var g=0;g<groups.length;g++) {
+    var grp = groups[g];
+    var items = remaining.filter(function(u){
+      if(grp.key==='orders') return u.effect==='orderSlot';
+      if(grp.key===null)     return u.station===null && u.effect!=='orderSlot';
+      return u.station===grp.key;
+    });
+    if(!items.length) continue;
+    html += '<div class="section-div" style="margin-top:10px">'+grp.label+'</div>';
+    for(var i=0;i<items.length;i++) {
+      var u = items[i];
+      var canBuy = G.gold >= u.cost;
+      html += '<div class="upgrade-item">'
+        +'<div class="upg-name">'+u.name+'</div>'
+        +'<div class="upg-desc">'+u.desc+'</div>'
+        +'<div class="upg-footer"><div class="upg-cost">☗ '+u.cost+'</div>'
+        +'<button class="upgrade-btn" data-uid="'+u.id+'" '+(canBuy?'':'disabled')+'>MEGVÁSÁROL</button>'
+        +'</div></div>';
+    }
+  }
+  c.innerHTML = html;
+}
+
+function renderPipeline() {
+  var c = document.getElementById('pipeline-container');
+  var html = '';
+  for(var idx=0;idx<G.stations.length;idx++) {
+    var s = G.stations[idx];
+    var pct = (s.progress/s.progressMax)*100;
+    var state = s.locked?'locked':s.active?'active':pct>=100?'complete':'';
+    var badge = s.locked?'':s.active?'running':pct>=100?'done':'';
+    var badgeText = s.locked?'🔒 ZÁROLT':s.active?'⚙ DOLGOZIK':pct>=100?'✓ KÉSZ':'— TÉTLEN';
+    var ql = s.outputItem.quality ? qualityLabel(s.outputItem.quality) : null;
+    var speedKey = s.id+'Speed';
+    var speed = 1/(G.multipliers[speedKey]||1);
+    var timeLeft = s.active ? ((s.progressMax-s.progress)/speed/1000).toFixed(1)+'s' : '';
+    var btnLabel = s.active?'⚙ DOLGOZIK...':pct>=100?'⬇ KIÜRÍTÉS':'▶ KOVÁCSOL';
+    var inputHTML='', outputHTML='';
+    for(var i=0;i<s.inputSlots.length;i++)  inputHTML  += '<div class="slot '+(s.inputSlots[i]?'filled':'')+'">'+( s.inputSlots[i]?s.inputSlots[i].icon:'')+'</div>';
+    for(var i=0;i<s.outputSlots.length;i++) outputHTML += '<div class="slot '+(s.outputSlots[i]?'output':'')+'">'+( s.outputSlots[i]?s.outputSlots[i].icon:'')+'</div>';
+    html += '<div class="station-wrapper"><div class="station '+state+'" id="station-'+s.id+'"><canvas class="station-anim" id="anim-'+s.id+'" width="220" height="120"></canvas>'
+      +'<div class="bottleneck-warn" id="bn-'+s.id+'" style="display:'+(s.bottleneck?'block':'none')+'">⚠ BOTTLENECK</div>'
+      +'<div class="station-header">'
+        +'<div class="station-icon">'+s.icon+'</div>'
+        +'<div class="station-meta"><div class="station-name">'+s.name+'</div><div class="station-sub">'+s.sub+'</div></div>'
+        +'<div class="station-badge '+badge+'" id="badge-'+s.id+'">'+badgeText+'</div>'
+      +'</div>'
+      +'<div class="prog-wrap"><div class="prog-fill" id="prog-'+s.id+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="prog-label"><span>'+s.description+'</span><span id="time-'+s.id+'">'+(s.active?timeLeft:(ql?'<span class="quality-pill '+ql.cls+'">'+ql.label+'</span>':''))+'</span></div>'
+      +'<div style="display:flex;gap:16px;margin-top:8px;align-items:center">'
+        +'<div><div style="font-family:Share Tech Mono;font-size:9px;color:var(--text2);margin-bottom:3px">INPUT</div><div style="display:flex;gap:4px">'+inputHTML+'</div></div>'
+        +'<div style="color:var(--text2);font-size:18px;align-self:center">→</div>'
+        +'<div><div style="font-family:Share Tech Mono;font-size:9px;color:var(--text2);margin-bottom:3px">OUTPUT</div><div style="display:flex;gap:4px">'+outputHTML+'</div></div>'
+      +'</div>'
+      +'<button class="craft-btn" id="btn-'+s.id+'" data-sid="'+s.id+'" '+(s.locked||s.active?'disabled':'')+'>'+( s.locked?'🔒 ZÁROLT':btnLabel)+'</button>'
+      +'</div></div>';
+    if(idx < G.stations.length-1) {
+      var flowing = !G.stations[idx+1].locked && G.stations[idx+1].active;
+      html += '<div class="arrow-connector"><div class="arrow-line '+(flowing?'active':'')+'"></div><div class="arrow-head '+(flowing?'active':'')+'">▼</div></div>';
+    }
+  }
+  c.innerHTML = html;
+}
+
+function renderOrders() {
+  var c = document.getElementById('order-list');
+  if(!G.orders.length) {
+    c.innerHTML = '<div style="color:var(--text2);font-size:12px;text-align:center;padding:20px;font-family:Share Tech Mono">Nincs aktív megrendelés...<br><br>Hamarosan érkeznek a frakciók.</div>';
+    return;
+  }
+  var html = '';
+  for(var i=0;i<G.orders.length;i++) {
+    var o = G.orders[i];
+    var pct = (o.timeLeft/o.totalTime)*100;
+    var mins = Math.floor(o.timeLeft/60000);
+    var secs = Math.floor((o.timeLeft%60000)/1000);
+    var timeStr = mins>0 ? mins+'p '+secs+'s' : secs+'s';
+    var timerCls = o.type==='vip'?'timer-vip':o.type==='urgent'?'timer-urgent':'timer-normal';
+    var badgeCls  = o.type==='vip'?'badge-vip':o.type==='urgent'?'badge-urgent':'badge-normal';
+    var badgeText = o.type==='vip'?'VIP':o.type==='urgent'?'SÜRGŐS':'NORMÁL';
+    var available = getInvCount(o.needs);
+    var done = o.qtyDelivered||0;
+    var stillNeeds = o.qty - done;
+    var hasItem = available > 0 && stillNeeds > 0;
+    var canGive = Math.min(available, stillNeeds);
+    var btnLabel = hasItem ? '✓ LEADÁS ('+canGive+'/'+stillNeeds+')' : '⚠ HIÁNYZÓ TERMÉK';
+    var dots = '';
+    for(var d=0;d<o.qty;d++) {
+      dots += '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;background:'+(d<done?'var(--green)':'var(--border)')+';border:1px solid '+(d<done?'var(--green)':'var(--text2)')+'"></span>';
+    }
+    html += '<div class="order-item '+o.type+'">'
+      +'<div class="order-header"><div class="order-faction">'+o.faction+'</div><div class="order-type-badge '+badgeCls+'">'+badgeText+'</div></div>'
+      +'<div class="order-product">'+o.icon+' '+o.product+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin:4px 0">'+dots+'<span id="oqty-'+o.id+'" style="font-family:Share Tech Mono;font-size:11px;color:'+(done>0?'var(--green)':'var(--text2)')+'">'+done+'/'+o.qty+' db</span></div>'
+      +'<div class="order-reward">☗ '+o.reward+' arany</div>'
+      +'<div class="order-timer"><div class="order-timer-fill '+timerCls+'" id="otimer-'+o.id+'" style="width:'+pct+'%"></div></div>'
+      +'<div class="order-time-left" id="otime-'+o.id+'">⏱ '+timeStr+'</div>'
+      +'<button class="fulfill-btn" id="obtn-'+o.id+'" data-oid="'+o.id+'" '+(hasItem?'':' disabled')+'>'+btnLabel+'</button>'
+      +'</div>';
+  }
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// PARTIAL UPDATES (every frame, no DOM rebuild)
+// ═══════════════════════════════════════════════
+function updateResourceNumbers() {
+  for(var key in G.resources) {
+    var r = G.resources[key];
+    var el = document.getElementById('res-val-'+key);
+    if(el) el.textContent = Math.floor(r.val);
+    var bar = document.getElementById('res-bar-'+key);
+    if(bar) bar.style.width = Math.min(100,(r.val/r.max)*100)+'%';
+  }
+  var items = [{k:'ingot'},{k:'part'},{k:'hardened'},{k:'product'}];
+  for(var i=0;i<items.length;i++) {
+    var el = document.getElementById('inv-val-'+items[i].k);
+    if(el) {
+      var v = G.inventory[items[i].k];
+      el.textContent = v;
+      el.style.color = v>0 ? 'var(--orange2)' : 'var(--text2)';
+    }
+  }
+}
+
+function updateStationProgress() {
+  for(var idx=0;idx<G.stations.length;idx++) {
+    var s = G.stations[idx];
+    if(s.locked) continue;
+    var pct = Math.min(100,(s.progress/s.progressMax)*100);
+    var bar = document.getElementById('prog-'+s.id);
+    if(bar) bar.style.width = pct+'%';
+    var timeEl = document.getElementById('time-'+s.id);
+    if(timeEl && s.active) {
+      var speedKey = s.id+'Speed';
+      var speed = 1/(G.multipliers[speedKey]||1);
+      timeEl.textContent = ((s.progressMax-s.progress)/speed/1000).toFixed(1)+'s';
+    }
+    var btn = document.getElementById('btn-'+s.id);
+    if(btn) {
+      if(s.active)      { btn.disabled=true;  btn.textContent='⚙ DOLGOZIK...'; }
+      else if(pct>=100) { btn.disabled=false; btn.textContent='⬇ KIÜRÍTÉS'; }
+      else              { btn.disabled=false; btn.textContent='▶ KOVÁCSOL'; }
+    }
+    var badge = document.getElementById('badge-'+s.id);
+    if(badge) {
+      if(s.active)      { badge.className='station-badge running'; badge.textContent='⚙ DOLGOZIK'; }
+      else if(pct>=100) { badge.className='station-badge done';    badge.textContent='✓ KÉSZ'; }
+      else              { badge.className='station-badge';         badge.textContent='— TÉTLEN'; }
+    }
+    var stEl = document.getElementById('station-'+s.id);
+    if(stEl) stEl.className = 'station'+(s.active?' active':pct>=100?' complete':'');
+    var bw = document.getElementById('bn-'+s.id);
+    if(bw) bw.style.display = s.bottleneck ? 'block' : 'none';
+  }
+}
+
+function updateOrderTimers() {
+  for(var i=0;i<G.orders.length;i++) {
+    var o = G.orders[i];
+    var pct = Math.max(0,(o.timeLeft/o.totalTime)*100);
+    var bar = document.getElementById('otimer-'+o.id);
+    if(bar) bar.style.width = pct+'%';
+    var txt = document.getElementById('otime-'+o.id);
+    if(txt) {
+      var mins = Math.floor(o.timeLeft/60000);
+      var secs = Math.floor((o.timeLeft%60000)/1000);
+      txt.textContent = '⏱ '+(mins>0?mins+'p '+secs+'s':secs+'s');
+      txt.style.color = pct<20 ? 'var(--red)' : 'var(--text2)';
+    }
+    var btn = document.getElementById('obtn-'+o.id);
+    if(btn) {
+      var available = getInvCount(o.needs);
+      var stillNeeds = o.qty - (o.qtyDelivered||0);
+      var hasItem = available>0 && stillNeeds>0;
+      btn.disabled = !hasItem;
+      btn.textContent = hasItem ? '✓ LEADÁS ('+Math.min(available,stillNeeds)+'/'+stillNeeds+')' : '⚠ HIÁNYZÓ TERMÉK';
+    }
+    var qtyEl = document.getElementById('oqty-'+o.id);
+    if(qtyEl) {
+      var done = o.qtyDelivered||0;
+      qtyEl.textContent = done+'/'+o.qty+' db';
+      qtyEl.style.color = done>0 ? 'var(--green)' : 'var(--text2)';
+    }
+  }
+}
+
+function updateUpgradeButtons() {
+  for(var i=0;i<G.upgrades.length;i++) {
+    var u = G.upgrades[i];
+    if(u.bought) continue;
+    var btn = document.querySelector('[data-uid="'+u.id+'"]');
+    if(btn) btn.disabled = G.gold < u.cost;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// EVENT DELEGATION
+// ═══════════════════════════════════════════════
+function setupEventDelegation() {
+  document.getElementById('pipeline-container').addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-sid]') : null;
+    if(btn && !btn.disabled) craftStation(btn.getAttribute('data-sid'));
+  });
+  document.getElementById('order-list').addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-oid]') : null;
+    if(btn && !btn.disabled) fulfillOrder(parseInt(btn.getAttribute('data-oid')));
+  });
+  document.getElementById('upgrade-list').addEventListener('click', function(e) {
+    var btn = e.target.closest ? e.target.closest('[data-uid]') : null;
+    if(btn && !btn.disabled) buyUpgrade(btn.getAttribute('data-uid'));
+  });
+}
+
+// ═══════════════════════════════════════════════
+// GAME TICK
+// ═══════════════════════════════════════════════
+var lastTick = Date.now();
+var orderSpawnTimer = 0;
+var needFullRender = { pipeline:false, orders:false, resources:false, upgrades:false };
+
+function gameTick() {
+  var now = Date.now();
+  var dt = Math.min(now - lastTick, 200);
+  lastTick = now;
+  G.tick++;
+  G.dayTime = (G.dayTime + dt/60000*60) % 1440;
+  if(G.dayTime < dt/60000*60) G.day++;
+
+  // resources
+  for(var key in G.resources) {
+    var r = G.resources[key];
+    r.val = Math.min(r.max, r.val + r.baseRate*dt/1000);
+  }
+
+  // station progress
+  for(var idx=0;idx<G.stations.length;idx++) {
+    var s = G.stations[idx];
+    if(s.locked || !s.active) continue;
+    var speedKey = s.id+'Speed';
+    var speed = 1/(G.multipliers[speedKey]||1);
+    s.progress += dt*speed;
+    if(s.progress >= s.progressMax) {
+      s.progress = s.progressMax;
+      s.active = false;
+      if(s.id==='smelter')  { G.inventory.ingot++;    toast('🧱 Fémtömb kész! (+1)','success');  sparks(document.getElementById('station-smelter')||document.body); }
+      if(s.id==='anvil')    { G.inventory.part++;     toast('⚙ Alkatrész kész! (+1)','success'); sparks(document.getElementById('station-anvil')||document.body); }
+      if(s.id==='grinder')  { G.inventory.hardened++; toast('🗡 Edzett rész kész! (+1)','success'); sparks(document.getElementById('station-grinder')||document.body); }
+      if(s.id==='assembly') { G.inventory.product++;  G.totalCrafted++; toast('⚔ Fegyver kész! (+1)','success'); sparks(document.getElementById('station-assembly')||document.body); }
+      if(s.id==='qc') {
+        var ql = qualityLabel(s.outputItem.quality);
+        var goldBonus = Math.floor(20*qualityMult(s.outputItem.quality));
+        G.gold += goldBonus;
+        toast('✅ QC: '+ql.label+' +'+goldBonus+' arany', s.outputItem.quality>=86?'success':'');
+      }
+      needFullRender.pipeline = true;
+      needFullRender.resources = true;
+    }
+  }
+
+  // bottleneck
+  G.stations[0].bottleneck = G.inventory.ingot > 4;
+  G.stations[1].bottleneck = G.inventory.part > 4;
+
+  // order spawn
+  orderSpawnTimer += dt;
+  if(orderSpawnTimer > 60000) { spawnOrder(); orderSpawnTimer=0; }
+
+  // order timers
+  var expired = false;
+  for(var i=G.orders.length-1;i>=0;i--) {
+    G.orders[i].timeLeft -= dt;
+    if(G.orders[i].timeLeft <= 0) {
+      toast('✗ Lejárt: '+G.orders[i].product+' ('+G.orders[i].faction+')','warn');
+      G.reputation = Math.max(0, G.reputation-(G.orders[i].type==='vip'?10:3));
+      G.orders.splice(i,1);
+      expired = true;
+    }
+  }
+  if(expired) needFullRender.orders = true;
+
+  // partial updates every frame
+  updateResourceNumbers();
+  updateStationProgress();
+  updateOrderTimers();
+  updateUpgradeButtons();
+  renderHeader();
+
+  // full re-renders only on structural change
+  if(needFullRender.pipeline)  { renderPipeline();  needFullRender.pipeline=false; }
+  if(needFullRender.orders)    { renderOrders();    needFullRender.orders=false; }
+  if(needFullRender.resources) { renderResources(); needFullRender.resources=false; }
+  if(needFullRender.upgrades)  { renderUpgrades();  needFullRender.upgrades=false; }
+
+  tickAnims(now);
+  requestAnimationFrame(gameTick);
+}
+
+// ═══════════════════════════════════════════════
+// STATION CANVAS ANIMATIONS
+// ═══════════════════════════════════════════════
+var animState = {};
+var animRAF = null;
+
+function initAnimState(sid) {
+  if(animState[sid]) return;
+  if(sid==='smelter') {
+    animState[sid] = {
+      particles: [],
+      meltY: 120,
+      bubbles: []
+    };
+  } else if(sid==='anvil') {
+    animState[sid] = { hammerY: 20, hammerDir: 1, sparks: [], hit: 0 };
+  } else if(sid==='grinder') {
+    animState[sid] = { angle: 0, sparks: [] };
+  } else if(sid==='assembly') {
+    animState[sid] = { gear1: 0, gear2: 0, bolts: [] };
+  } else if(sid==='qc') {
+    animState[sid] = { scanY: 0, beams: [] };
+  }
+}
+
+function drawSmelter(ctx, w, h, active, t) {
+  var st = animState['smelter'];
+  ctx.clearRect(0,0,w,h);
+
+  // molten metal pool at bottom
+  var poolH = active ? 35 + Math.sin(t*0.003)*5 : 20;
+  var grad = ctx.createLinearGradient(0, h-poolH, 0, h);
+  grad.addColorStop(0, active ? '#ff6600' : '#442200');
+  grad.addColorStop(0.5, active ? '#ffaa00' : '#331100');
+  grad.addColorStop(1, active ? '#cc3300' : '#220800');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.moveTo(0, h-poolH);
+  for(var x=0; x<=w; x+=8) {
+    var wave = Math.sin(x*0.08 + t*0.004) * (active ? 4 : 1);
+    ctx.lineTo(x, h-poolH+wave);
+  }
+  ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+  ctx.fill();
+
+  // rising heat shimmer lines
+  if(active) {
+    ctx.strokeStyle = 'rgba(255,140,0,0.15)';
+    ctx.lineWidth = 1;
+    for(var i=0;i<5;i++) {
+      var xp = 20+i*40 + Math.sin(t*0.002+i)*8;
+      ctx.beginPath();
+      ctx.moveTo(xp, h-poolH);
+      ctx.bezierCurveTo(xp+Math.sin(t*0.003+i*2)*10, h-poolH-30, xp+Math.sin(t*0.004+i)*12, h-poolH-60, xp+Math.sin(t*0.002+i*3)*8, h-poolH-90);
+      ctx.stroke();
+    }
+  }
+
+  // bubbles
+  if(active && Math.random()<0.06) {
+    st.bubbles.push({ x: 10+Math.random()*(w-20), y: h-poolH+5, r: 1+Math.random()*3, vy: -0.5-Math.random()*0.8 });
+  }
+  for(var i=st.bubbles.length-1;i>=0;i--) {
+    var b = st.bubbles[i];
+    b.y += b.vy; b.r -= 0.04;
+    if(b.r<=0||b.y<h-poolH-10) { st.bubbles.splice(i,1); continue; }
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(255,200,50,0.6)'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // floating ember sparks
+  if(active && Math.random()<0.08) {
+    st.particles.push({ x: 30+Math.random()*(w-60), y: h-poolH, vx:(Math.random()-0.5)*1.5, vy:-1-Math.random()*2, life:1 });
+  }
+  for(var i=st.particles.length-1;i>=0;i--) {
+    var p=st.particles[i];
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.03; p.life-=0.02;
+    if(p.life<=0){st.particles.splice(i,1);continue;}
+    ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,'+(100+Math.floor(p.life*155))+',0,'+p.life+')';
+    ctx.fill();
+  }
+}
+
+function drawAnvil(ctx, w, h, active, t) {
+  var st = animState['anvil'];
+  ctx.clearRect(0,0,w,h);
+
+  // anvil silhouette
+  ctx.fillStyle = active ? '#3a3a3a' : '#222';
+  // base
+  ctx.fillRect(w/2-45, h-25, 90, 18);
+  // body
+  ctx.fillRect(w/2-30, h-55, 60, 30);
+  // horn
+  ctx.beginPath();
+  ctx.moveTo(w/2-30, h-45);
+  ctx.lineTo(w/2-70, h-38);
+  ctx.lineTo(w/2-30, h-30);
+  ctx.closePath();
+  ctx.fill();
+
+  // highlight on anvil top
+  if(active) {
+    ctx.fillStyle = '#ff8800';
+    ctx.fillRect(w/2-30, h-57, 60, 3);
+  }
+
+  // hammer
+  var hammerSwing = active ? Math.abs(Math.sin(t*0.005)) : 0.1;
+  var hammerY = h-80 - hammerSwing*35;
+  var hammerRot = active ? (hammerSwing-0.5)*0.4 : 0;
+
+  ctx.save();
+  ctx.translate(w/2+10, hammerY+10);
+  ctx.rotate(hammerRot);
+  // handle
+  ctx.fillStyle = '#6b3f1a';
+  ctx.fillRect(-3, 0, 6, 45);
+  // head
+  ctx.fillStyle = active ? '#aaaaaa' : '#555';
+  ctx.fillRect(-14, -8, 28, 16);
+  ctx.restore();
+
+  // impact sparks when hammer near anvil
+  if(active && hammerSwing > 0.88 && Math.random()<0.3) {
+    for(var k=0;k<4;k++) {
+      st.sparks.push({ x: w/2+10, y: h-58, vx:(Math.random()-0.5)*6, vy:-1-Math.random()*4, life:0.8 });
+    }
+    st.hit = 5;
+  }
+  if(st.hit>0) { st.hit--; }
+  for(var i=st.sparks.length-1;i>=0;i--) {
+    var sp=st.sparks[i];
+    sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=0.2; sp.life-=0.07;
+    if(sp.life<=0){st.sparks.splice(i,1);continue;}
+    ctx.beginPath(); ctx.moveTo(sp.x,sp.y); ctx.lineTo(sp.x-sp.vx,sp.y-sp.vy);
+    ctx.strokeStyle='rgba(255,220,80,'+sp.life+')'; ctx.lineWidth=1.5; ctx.stroke();
+  }
+}
+
+function drawGrinder(ctx, w, h, active, t) {
+  var st = animState['grinder'];
+  ctx.clearRect(0,0,w,h);
+
+  var cx = w/2+10, cy = h/2+5;
+  var r = 36;
+  st.angle += active ? 0.06 : 0.005;
+
+  // grinding wheel
+  ctx.save(); ctx.translate(cx, cy);
+  // outer ring
+  ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+  var grad = ctx.createRadialGradient(0,0,r*0.3,0,0,r);
+  grad.addColorStop(0, active ? '#555' : '#2a2a2a');
+  grad.addColorStop(1, active ? '#333' : '#1a1a1a');
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.strokeStyle = active ? '#888' : '#444'; ctx.lineWidth=2; ctx.stroke();
+
+  // teeth on wheel
+  for(var k=0;k<16;k++) {
+    var ang = st.angle + k*(Math.PI*2/16);
+    var ix=Math.cos(ang)*(r-2), iy=Math.sin(ang)*(r-2);
+    var ox=Math.cos(ang)*(r+5), oy=Math.sin(ang)*(r+5);
+    ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ox,oy);
+    ctx.strokeStyle = active ? '#aaa' : '#444'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  // center hub
+  ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2);
+  ctx.fillStyle = active ? '#ff6600' : '#333'; ctx.fill();
+  ctx.beginPath(); ctx.arc(0,0,3,0,Math.PI*2);
+  ctx.fillStyle='#111'; ctx.fill();
+
+  // spokes
+  for(var k=0;k<4;k++) {
+    var ang=st.angle+k*(Math.PI/2);
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(ang)*8, Math.sin(ang)*8);
+    ctx.lineTo(Math.cos(ang)*(r-4), Math.sin(ang)*(r-4));
+    ctx.strokeStyle='#666'; ctx.lineWidth=2; ctx.stroke();
+  }
+  ctx.restore();
+
+  // workpiece being ground
+  ctx.fillStyle = active ? '#885500' : '#442200';
+  ctx.fillRect(cx+r-4, cy-8, 35, 16);
+
+  // sparks from contact point
+  if(active && Math.random()<0.25) {
+    st.sparks.push({ x:cx+r+2, y:cy, vx:1+Math.random()*4, vy:(Math.random()-0.5)*5, life:0.7 });
+  }
+  for(var i=st.sparks.length-1;i>=0;i--) {
+    var sp=st.sparks[i];
+    sp.x+=sp.vx; sp.y+=sp.vy; sp.vy+=0.15; sp.life-=0.06;
+    if(sp.life<=0){st.sparks.splice(i,1);continue;}
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,1.2,0,Math.PI*2);
+    ctx.fillStyle='rgba(255,'+(150+Math.floor(Math.random()*100))+',0,'+sp.life+')';
+    ctx.fill();
+  }
+}
+
+function drawAssembly(ctx, w, h, active, t) {
+  var st = animState['assembly'];
+  ctx.clearRect(0,0,w,h);
+  st.gear1 += active ? 0.04 : 0.003;
+  st.gear2 -= active ? 0.04 : 0.003;
+
+  function drawGear(cx, cy, r, teeth, angle, col) {
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle);
+    // body
+    ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='#555'; ctx.lineWidth=1.5; ctx.stroke();
+    // teeth
+    for(var k=0;k<teeth;k++) {
+      var a=k*(Math.PI*2/teeth);
+      ctx.save(); ctx.rotate(a);
+      ctx.fillStyle=col;
+      ctx.fillRect(-3, -r-7, 6, 8);
+      ctx.restore();
+    }
+    // center
+    ctx.beginPath(); ctx.arc(0,0,r*0.35,0,Math.PI*2);
+    ctx.fillStyle='#1a1a1a'; ctx.fill();
+    ctx.beginPath(); ctx.arc(0,0,r*0.15,0,Math.PI*2);
+    ctx.fillStyle='#ff6600'; ctx.fill();
+    ctx.restore();
+  }
+
+  var gCol1 = active ? '#5a5a5a' : '#2a2a2a';
+  var gCol2 = active ? '#4a4a4a' : '#222';
+  var gCol3 = active ? '#666' : '#333';
+  drawGear(w/2-20, h/2, 28, 10, st.gear1, gCol1);
+  drawGear(w/2+35, h/2-5, 18, 7, st.gear2, gCol2);
+  drawGear(w/2+20, h/2+32, 14, 6, st.gear1*1.5, gCol3);
+
+  // wrench
+  ctx.save();
+  ctx.translate(w/2-55, h/2+10);
+  ctx.rotate(active ? Math.sin(t*0.004)*0.3 : 0);
+  ctx.fillStyle = active ? '#888' : '#444';
+  ctx.fillRect(-3,-25,6,50);
+  ctx.beginPath();
+  ctx.arc(0,-25,10,0,Math.PI*2); ctx.arc(0,-25,5,0,Math.PI*2);
+  ctx.fillStyle = active ? '#999' : '#444';
+  ctx.fill();
+  ctx.restore();
+
+  // connection bolts animating
+  if(active) {
+    if(Math.random()<0.04) st.bolts.push({x:20+Math.random()*(w-40),y:10+Math.random()*(h-20),life:1,r:2+Math.random()*3});
+    for(var i=st.bolts.length-1;i>=0;i--) {
+      var b=st.bolts[i]; b.life-=0.025;
+      if(b.life<=0){st.bolts.splice(i,1);continue;}
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(100,200,255,'+b.life*0.5+')';
+      ctx.fill();
+      ctx.strokeStyle='rgba(100,200,255,'+b.life+')'; ctx.lineWidth=1; ctx.stroke();
+    }
+  }
+}
+
+function drawQC(ctx, w, h, active, t) {
+  var st = animState['qc'];
+  ctx.clearRect(0,0,w,h);
+
+  st.scanY = (st.scanY + (active ? 1.2 : 0.3)) % h;
+
+  // target object (sword silhouette simplified)
+  ctx.fillStyle = active ? '#445544' : '#222';
+  ctx.fillRect(w/2-5, 15, 10, h-30);
+  ctx.fillRect(w/2-18, h/2-5, 36, 10);
+
+  // scan beam
+  if(active) {
+    var scanGrad = ctx.createLinearGradient(0, st.scanY-15, 0, st.scanY+15);
+    scanGrad.addColorStop(0, 'rgba(0,255,100,0)');
+    scanGrad.addColorStop(0.5, 'rgba(0,255,100,0.4)');
+    scanGrad.addColorStop(1, 'rgba(0,255,100,0)');
+    ctx.fillStyle = scanGrad;
+    ctx.fillRect(0, st.scanY-15, w, 30);
+
+    // scan line
+    ctx.beginPath();
+    ctx.moveTo(0, st.scanY); ctx.lineTo(w, st.scanY);
+    ctx.strokeStyle = 'rgba(0,255,100,0.7)'; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // grid overlay
+  ctx.strokeStyle = active ? 'rgba(0,255,100,0.08)' : 'rgba(100,100,100,0.05)';
+  ctx.lineWidth = 0.5;
+  for(var x=0;x<w;x+=20) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for(var y=0;y<h;y+=20) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  // corner brackets
+  var bCol = active ? 'rgba(0,255,100,0.7)' : 'rgba(100,150,100,0.3)';
+  ctx.strokeStyle=bCol; ctx.lineWidth=2;
+  [[5,5],[w-5,5],[5,h-5],[w-5,h-5]].forEach(function(pt) {
+    var sx=pt[0]>w/2?-1:1, sy=pt[1]>h/2?-1:1;
+    ctx.beginPath(); ctx.moveTo(pt[0],pt[1]+sy*15); ctx.lineTo(pt[0],pt[1]); ctx.lineTo(pt[0]+sx*15,pt[1]); ctx.stroke();
+  });
+
+  // quality readout text
+  if(active) {
+    ctx.font = '9px Share Tech Mono, monospace';
+    ctx.fillStyle = 'rgba(0,255,100,0.5)';
+    ctx.fillText('SCANNING...', 6, h-8);
+  }
+}
+
+var animDrawers = {
+  smelter:  drawSmelter,
+  anvil:    drawAnvil,
+  grinder:  drawGrinder,
+  assembly: drawAssembly,
+  qc:       drawQC
+};
+
+function tickAnims(t) {
+  for(var sid in animDrawers) {
+    var canvas = document.getElementById('anim-'+sid);
+    if(!canvas) continue;
+    // sync canvas pixel size to CSS size
+    var cw = canvas.offsetWidth || 200;
+    var ch = canvas.offsetHeight || 120;
+    if(canvas.width !== cw || canvas.height !== ch) { canvas.width=cw; canvas.height=ch; }
+    initAnimState(sid);
+    var ctx = canvas.getContext('2d');
+    var station = null;
+    for(var i=0;i<G.stations.length;i++) { if(G.stations[i].id===sid){ station=G.stations[i]; break; } }
+    if(!station || station.locked) { ctx.clearRect(0,0,canvas.width,canvas.height); continue; }
+    animDrawers[sid](ctx, canvas.width, canvas.height, station.active, t);
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  spawnOrder(); spawnOrder();
+  renderResources();
+  renderPipeline();
+  renderOrders();
+  renderHeader();
+  renderUpgrades();
+  setupEventDelegation();
+  lastTick = Date.now();
+  requestAnimationFrame(gameTick);
+  toast('Scrap Forge indítva! Kattints a KOVÁCSOL gombra.');
+}
+
+init();
+
+</script>
+</body>
+</html>
