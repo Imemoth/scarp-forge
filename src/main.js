@@ -8,9 +8,11 @@ import { renderHeader, renderResources, renderUpgrades, renderPipeline, renderOr
 import { updateResourceNumbers, updateStationProgress, updateOrderTimers, updateUpgradeButtons } from './update.js';
 import { tickAnims } from './animations.js';
 import { setupEventDelegation } from './events.js';
+import { loadGame, saveGame } from './storage.js';
 
 let lastTick        = Date.now();
 let orderSpawnTimer = 0;
+let autoSaveTimer   = 0;
 
 function gameTick(ts) {
   const now = Date.now();
@@ -57,6 +59,10 @@ function gameTick(ts) {
   orderSpawnTimer += dt;
   if (orderSpawnTimer > 60000) { spawnOrder(); orderSpawnTimer = 0; }
 
+  // ── auto-save every 30s ──
+  autoSaveTimer += dt;
+  if (autoSaveTimer >= 30000) { saveGame(); autoSaveTimer = 0; }
+
   // ── order timers + expiry ──
   let expired = false;
   for (let i = G.orders.length - 1; i >= 0; i--) {
@@ -88,8 +94,11 @@ function gameTick(ts) {
   requestAnimationFrame(gameTick);
 }
 
-function init() {
-  spawnOrder(); spawnOrder();
+async function init() {
+  const loaded = await loadGame();
+  if (!loaded) {
+    spawnOrder(); spawnOrder();
+  }
   renderResources();
   renderPipeline();
   renderOrders();
@@ -98,7 +107,7 @@ function init() {
   setupEventDelegation();
   lastTick = Date.now();
   requestAnimationFrame(gameTick);
-  toast('Scrap Forge indítva! Kattints a KOVÁCSOL gombra.');
+  toast(loaded ? '💾 Játék betöltve!' : 'Scrap Forge indítva! Kattints a KOVÁCSOL gombra.');
 }
 
 init();

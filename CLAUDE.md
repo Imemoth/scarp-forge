@@ -1,5 +1,5 @@
 # Project: Scrap Forge
-_Last updated: 2026-02-26 (refactor session)_
+_Last updated: 2026-02-26 (IndexedDB persistence)_
 
 > Posztapokaliptikus Kovácsműhely Idle Szimulátor – böngészőalapú, moduláris HTML5/JS játék.
 
@@ -21,13 +21,17 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 ## Current State
 
 **Fázis:** MVP aktív fejlesztés (Fázis 0)
-**Státusz:** Moduláris refaktor kész, core pipeline stabil, balance + iOS edge case-ek következnek
-**Következő:** Balance finomhangolás, iOS Safari tesztelés, megrendelés slot upgrade tesztelés
+**Státusz:** IndexedDB perzisztencia kész – játékállás megmarad újratöltés után
+**Következő:** Balance finomhangolás, iOS Safari tesztelés, offline progress számítás
 
 ### Ami működik
 - Teljes 5-állomásos gyártási lánc (Olvasztó → Kovácsállvány → Csiszoló → Összeszereló → QC)
 - Nyersanyag automatikus gyűjtés (4 típus: scrap, coal, wood, binder)
 - Minőségi rendszer (Selejt / Standard / Jó / Mestermű)
+- **IndexedDB mentés/betöltés** – teljes G state perzisztál (gold, rep, inventory, stations, upgrades, orders, multipliers)
+- Auto-save 30 másodpercenként + mentés upgrade vásárlásnál és megrendelés teljesítésnél
+- `↺` Új játék gomb headerben (confirm dialóg + IndexedDB törlés + reload)
+- Betöltéskor `💾 Játék betöltve!` toast; első indulásnál normál welcome toast
 - 3 frakció megrendelés rendszer rep-gating-gel (0 / 10 / 25 / 50 rep threshold)
 - 22 upgrade, állomásonként csoportosítva
 - Részleges megrendelés teljesítés (qty dots vizuális feedback)
@@ -63,8 +67,9 @@ scrap-forge/
 │   │                       #   updateOrderTimers, updateUpgradeButtons
 │   ├── animations.js       # initAnimState (privát), drawSmelter/Anvil/Grinder/Assembly/QC,
 │   │                       #   tickAnims (exportált)
-│   ├── events.js           # setupEventDelegation (click + data-tab kezelés)
-│   └── main.js             # gameTick, init – belépési pont
+│   ├── events.js           # setupEventDelegation (click + data-tab + reset gomb kezelés)
+│   ├── storage.js          # IndexedDB wrapper: openDB, saveGame, loadGame, resetGame
+│   └── main.js             # gameTick, async init, auto-save timer – belépési pont
 ├── scrap_forge_mvp.html    # Archív (single-file eredeti, ne töröljük)
 ├── scrap_forge_gdd.md      # Game Design Document (14 szekció, teljes spec)
 ├── scrap_forge_roadmap.md  # Fázisonkénti fejlesztési terv (0–4. fázis)
@@ -77,10 +82,12 @@ scrap-forge/
 ```
 state.js          (nincs import)
     ↓
+storage.js        ← state.js (G)
 helpers.js        ← state.js (G)
     ↓
 game.js           ← state.js (G, ORDER_TEMPLATES, needFullRender)
                   ← helpers.js (getQuality, getInvCount, consumeInv, toast, sparks)
+                  ← storage.js (saveGame)
 render.js         ← state.js (G)
                   ← helpers.js (qualityLabel, getInvCount)
 update.js         ← state.js (G)
@@ -89,6 +96,7 @@ animations.js     ← state.js (G)
     ↓
 events.js         ← game.js (craftStation, fulfillOrder, buyUpgrade)
                   ← helpers.js (showTab)
+                  ← storage.js (resetGame)
     ↓
 main.js           ← state.js (G, needFullRender)
                   ← game.js (spawnOrder)
@@ -97,6 +105,7 @@ main.js           ← state.js (G, needFullRender)
                   ← animations.js (tickAnims)
                   ← events.js (setupEventDelegation)
                   ← helpers.js (sparks, qualityLabel, qualityMult, toast)
+                  ← storage.js (loadGame, saveGame)
 ```
 
 ### Dev indítás
@@ -204,6 +213,10 @@ gameTick() [requestAnimationFrame, ~200ms dt cap]
 - [x] **Bug fix: sparks() null crash** – null check ha station DOM elem nem létezik
 - [x] **Bug fix: qtyDelivered null safety** – `|| 0` guard minden helyen
 - [x] **Mobile tab onclick eltávolítva** – `data-tab` + event delegation helyette
+- [x] **IndexedDB perzisztencia** – `src/storage.js`: openDB/saveGame/loadGame/resetGame, single save slot ('slot1'), saveVersion:1 (migráció ready)
+- [x] **Auto-save** – 30s-onként gameTick-ben + azonnali mentés buyUpgrade + fulfillOrder után
+- [x] **Új játék gomb** – `↺` a headerben, confirm dialóg, resetGame() + location.reload()
+- [x] **Save indikátor** – `💾` ikon villan el mentéskor (CSS transition)
 
 ---
 
@@ -224,6 +237,7 @@ gameTick() [requestAnimationFrame, ~200ms dt cap]
 
 ## Session Log (last 5)
 
+- **2026-02-26 (3)**: IndexedDB perzisztencia – `src/storage.js` létrehozva (openDB, saveGame, loadGame, resetGame). Módosítva: `game.js` (saveGame hívás fulfillOrder + buyUpgrade végén), `main.js` (async init, await loadGame, 30s auto-save timer), `events.js` (↺ reset gomb listener), `index.html` (reset gomb + save indikátor a headerben), `css/style.css` (reset gomb + #save-indicator stílus).
 - **2026-02-26 (2)**: Moduláris refaktor – single-file HTML → ES Modules projekt struktúra. Létrehozva: `index.html`, `css/style.css`, `src/state.js`, `src/helpers.js`, `src/game.js`, `src/render.js`, `src/update.js`, `src/animations.js`, `src/events.js`, `src/main.js`. Bug fixek: negatív inventory guard, sparks() null check, qtyDelivered null safety, inline onclick eltávolítva.
 - **2026-02-26 (1)**: CLAUDE.md létrehozva – projekt teljes állapotának dokumentálása (pipeline, architecture, patterns, known issues)
 

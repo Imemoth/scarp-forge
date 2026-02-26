@@ -62,6 +62,18 @@ header {
   font-family:'Share Tech Mono'; font-size:13px; color:var(--white);
   border: 1px solid var(--orange);
 }
+#save-indicator {
+  font-size:14px; opacity:0; transition:opacity 0.2s;
+  font-family:'Share Tech Mono'; color:var(--green);
+  pointer-events:none;
+}
+#save-indicator.visible { opacity:1; }
+#btn-reset {
+  background:none; border:1px solid var(--border); border-radius:2px;
+  color:var(--text2); font-size:16px; padding:4px 8px; cursor:pointer;
+  font-family:'Share Tech Mono'; transition:color 0.2s, border-color 0.2s;
+}
+#btn-reset:hover { color:var(--red); border-color:var(--red); }
 
 /* ── MAIN LAYOUT ── */
 .main { display:grid; grid-template-columns: 260px 1fr 280px; gap:0; height:calc(100vh - 61px); }

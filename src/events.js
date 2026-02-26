@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════
 import { craftStation, fulfillOrder, buyUpgrade } from './game.js';
 import { showTab } from './helpers.js';
+import { resetGame } from './storage.js';
 
 export function setupEventDelegation() {
   document.getElementById('pipeline-container').addEventListener('click', e => {
@@ -27,4 +28,14 @@ export function setupEventDelegation() {
     const btn = e.target.closest('[data-tab]');
     if (btn) showTab(btn.getAttribute('data-tab'));
   });
+
+  // New game (reset) button
+  const resetBtn = document.getElementById('btn-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      if (!confirm('Biztosan új játékot kezdesz? Minden progress törlődik!')) return;
+      await resetGame();
+      location.reload();
+    });
+  }
 }

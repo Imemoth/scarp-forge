@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════
 import { G, ORDER_TEMPLATES, needFullRender } from './state.js';
 import { getQuality, getInvCount, consumeInv, toast, sparks } from './helpers.js';
+import { saveGame } from './storage.js';
 
 export function spawnOrder(forceFaction) {
   if (G.orders.length >= G.maxOrderSlots) return;
@@ -99,6 +100,7 @@ export function fulfillOrder(id) {
 
   toast('✓ ' + order.product + ' kész! +' + earned + ' arany', 'success');
   needFullRender.orders = true;
+  saveGame();
 }
 
 export function buyUpgrade(uid) {
@@ -123,4 +125,5 @@ export function buyUpgrade(uid) {
   toast(u.name + ' megvásárolva!', 'success');
   needFullRender.upgrades = true;
   needFullRender.pipeline = true;
+  saveGame();
 }
