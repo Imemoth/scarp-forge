@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚒ SCRAP FORGE</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">⚒ SCRAP FORGE <span>POST-APOCALYPTIC SMITHY v0.1</span></div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="hstat-val" id="hstat-gold">0</div><div class="hstat-lbl">☗ Arany</div></div>
+    <div class="hstat"><div class="hstat-val" id="hstat-crafted">0</div><div class="hstat-lbl">⚒ Kész</div></div>
+    <div class="hstat"><div class="hstat-val" id="hstat-rep">0</div><div class="hstat-lbl">★ Reputa.</div></div>
+  </div>
+  <div class="day-badge" id="day-badge">NAP 1 — HAJNAL</div>
+</header>
+
+<!-- Mobile tabs – onclick replaced with data-tab (handled by events.js delegation) -->
+<div class="mobile-tabs">
+  <button data-tab="resources" id="tab-resources" class="active">🔩 ANYAGOK</button>
+  <button data-tab="pipeline"  id="tab-pipeline">⚒ PIPELINE</button>
+  <button data-tab="orders"    id="tab-orders">📋 MEGRENDELÉSEK</button>
+</div>
+
+<div class="main">
+
+  <!-- LEFT: Resources + Upgrades -->
+  <div class="sidebar mobile-panel active" id="panel-resources">
+    <div class="panel-header"><div class="dot"></div>NYERSANYAGOK</div>
+    <div class="panel-body">
+      <div id="resource-list"></div>
+      <div class="section-div">★ FEJLESZTÉSEK</div>
+      <div id="upgrade-list"></div>
+    </div>
+  </div>
+
+  <!-- CENTER: Pipeline -->
+  <div class="pipeline-area mobile-panel" id="panel-pipeline">
+    <div class="pipeline-title">⬡ KOVÁCSMŰHELY PIPELINE — kattints az állomásra a kovácsoláshoz</div>
+    <div class="pipeline-scroll" id="pipeline-container">
+      <!-- stations rendered by JS -->
+    </div>
+  </div>
+
+  <!-- RIGHT: Order Queue -->
+  <div class="sidebar right mobile-panel" id="panel-orders">
+    <div class="panel-header"><div class="dot"></div>MEGRENDELÉSEK</div>
+    <div class="panel-body" id="order-list">
+      <!-- orders rendered by JS -->
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

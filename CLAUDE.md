@@ -1,7 +1,7 @@
 # Project: Scrap Forge
-_Last updated: 2026-02-26_
+_Last updated: 2026-02-26 (refactor session)_
 
-> Posztapokaliptikus Kovácsműhely Idle Szimulátor – böngészőalapú, single-file HTML5/JS játék.
+> Posztapokaliptikus Kovácsműhely Idle Szimulátor – böngészőalapú, moduláris HTML5/JS játék.
 
 ---
 
@@ -21,8 +21,8 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 ## Current State
 
 **Fázis:** MVP aktív fejlesztés (Fázis 0)
-**Státusz:** Core pipeline kész, balance + edge case-ek folyamatban
-**Következő:** Megrendelés slot upgrade tesztelés, iOS Safari stabilitás, balance finomhangolás
+**Státusz:** Moduláris refaktor kész, core pipeline stabil, balance + iOS edge case-ek következnek
+**Következő:** Balance finomhangolás, iOS Safari tesztelés, megrendelés slot upgrade tesztelés
 
 ### Ami működik
 - Teljes 5-állomásos gyártási lánc (Olvasztó → Kovácsállvány → Csiszoló → Összeszereló → QC)
@@ -33,9 +33,9 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 - Részleges megrendelés teljesítés (qty dots vizuális feedback)
 - Mobile-first UI, event delegation, tab navigáció
 - Canvas animációk mind az 5 állomáshoz
+- **ES Modules alapú moduláris fájlstruktúra** (refaktorálva)
 
 ### Ami folyamatban van
-- Megrendelés slot upgrade rendszer tesztelése (u_os1–u_os4, 2→6 slot)
 - Balance finomhangolás (nyersanyag rátak, station időzítések)
 - iOS Safari edge case-ek
 
@@ -49,39 +49,80 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 ### Fájlstruktúra
 ```
 scrap-forge/
-├── scrap_forge_mvp.html    # A TELJES JÁTÉK – single-file, zero dependencies
+├── index.html              # HTML shell – layout + CSS link + <script type="module">
+├── css/
+│   └── style.css           # Teljes CSS (CSS Variables, mobile-first, animációk)
+├── src/
+│   ├── state.js            # G objektum + ORDER_TEMPLATES + needFullRender
+│   ├── helpers.js          # getQuality, qualityLabel, qualityMult, getInvCount,
+│   │                       #   consumeInv, toast, sparks, showTab
+│   ├── game.js             # spawnOrder, craftStation, fulfillOrder, buyUpgrade
+│   ├── render.js           # renderHeader, renderResources, renderUpgrades,
+│   │                       #   renderPipeline, renderOrders
+│   ├── update.js           # updateResourceNumbers, updateStationProgress,
+│   │                       #   updateOrderTimers, updateUpgradeButtons
+│   ├── animations.js       # initAnimState (privát), drawSmelter/Anvil/Grinder/Assembly/QC,
+│   │                       #   tickAnims (exportált)
+│   ├── events.js           # setupEventDelegation (click + data-tab kezelés)
+│   └── main.js             # gameTick, init – belépési pont
+├── scrap_forge_mvp.html    # Archív (single-file eredeti, ne töröljük)
 ├── scrap_forge_gdd.md      # Game Design Document (14 szekció, teljes spec)
 ├── scrap_forge_roadmap.md  # Fázisonkénti fejlesztési terv (0–4. fázis)
 ├── scrap_forge_todo.md     # Aktuális sprint feladatok + backlog
-├── README.md               # Projekt összefoglaló, quick start
-└── CLAUDE.md               # Ez a fájl
+└── README.md               # Projekt összefoglaló, quick start
 ```
 
-### scrap_forge_mvp.html belső struktúra
+### Dependency graph (körkörös import nincs)
 
-A fájl egyetlen HTML dokumentum, sorrendben:
-1. **CSS** (~440 sor) – CSS Variables-alapú theming, posztapokaliptikus téma, mobile-first
-2. **HTML layout** – 3 panel: bal (Resources + Upgrades), közép (Pipeline), jobb (Order Queue)
-3. **Global State `G` objektum** (sor ~444) – egyetlen forrás az összes játékállapothoz
-4. **ORDER_TEMPLATES tömb** (sor ~506) – megrendelés sablonok, rep-gated pool
-5. **Helper függvények** (sor ~532) – `getQuality`, `qualityLabel`, `qualityMult`, `getInvCount`, `consumeInv`, `toast`, `sparks`, `showTab`
-6. **Core game logic** – `spawnOrder`, `craftStation`, `fulfillOrder`, `buyUpgrade`
-7. **Render függvények** – `renderHeader`, `renderResources`, `renderUpgrades`, `renderPipeline`, `renderOrders`
-8. **Update (diff) függvények** – `updateResourceNumbers`, `updateStationProgress`, `updateOrderTimers`, `updateUpgradeButtons` _(ezek futnak tickenként, nem rebuild-elnek DOM-ot)_
-9. **Event delegation** – `setupEventDelegation` (sor ~981) – egyetlen listener a `document`-en
-10. **Game loop** – `gameTick` (sor ~1003) – 200ms interval, resource növelés + station progress + order timer
-11. **Canvas animációk** – `drawSmelter`, `drawAnvil`, `drawGrinder`, `drawAssembly`, `drawQC`, `tickAnims`
-12. **`init()`** (sor ~1419) – játék inicializálás, event delegation setup, első render
+```
+state.js          (nincs import)
+    ↓
+helpers.js        ← state.js (G)
+    ↓
+game.js           ← state.js (G, ORDER_TEMPLATES, needFullRender)
+                  ← helpers.js (getQuality, getInvCount, consumeInv, toast, sparks)
+render.js         ← state.js (G)
+                  ← helpers.js (qualityLabel, getInvCount)
+update.js         ← state.js (G)
+                  ← helpers.js (getInvCount)
+animations.js     ← state.js (G)
+    ↓
+events.js         ← game.js (craftStation, fulfillOrder, buyUpgrade)
+                  ← helpers.js (showTab)
+    ↓
+main.js           ← state.js (G, needFullRender)
+                  ← game.js (spawnOrder)
+                  ← render.js (render*)
+                  ← update.js (update*)
+                  ← animations.js (tickAnims)
+                  ← events.js (setupEventDelegation)
+                  ← helpers.js (sparks, qualityLabel, qualityMult, toast)
+```
+
+### Dev indítás
+
+```bash
+npx serve /home/user/scarp-forge
+# vagy
+python3 -m http.server 8080
+# Böngésző: http://localhost:3000  (vagy 8080)
+```
+
+> ES Modules miatt lokális szerver szükséges – `file://` protokollon nem fut.
 
 ### Adatfolyam
 
 ```
-gameTick() [200ms]
-  → resources növelés (baseRate × multipliers)
-  → station progress update (progressMax csökkentés)
+gameTick() [requestAnimationFrame, ~200ms dt cap]
+  → resources növelés (baseRate × dt/1000)
+  → station progress update (dt × speedMultiplier)
   → station completion → inventory update → needFullRender flag
-  → order timer countdown → lejárat → reputation penalty
-  → needFullRender ? renderAll() : updateAll()
+  → bottleneck detection (ingot/part > 4)
+  → order spawn timer (60s)
+  → order timer countdown → lejárat → reputation penalty (Math.max(0))
+  → updateAll() (diff updates, minden frame)
+  → needFullRender ? renderAll() : skip
+  → tickAnims(now)
 ```
 
 ### Global State `G` kulcs mezők
@@ -101,15 +142,17 @@ gameTick() [200ms]
 ## Conventions & Patterns
 
 ### Kódstílus
-- **ES5 kompatibilis Vanilla JS** – `var` használat (iOS Safari miatt, bár migráció tervezett `const/let`-re)
+- **ES Modules + const/let** – `import`/`export`, modern JS (ES6+)
+- Indítás: `npx serve .` vagy `python3 -m http.server` szükséges (ES Modules)
 - Egyetlen `G` globális state objektum – nincs külső state management
-- `needFullRender` boolean flag – teljes DOM rebuild csak akkor, ha feltétlenül szükséges
-- Különválasztott **render** (teljes rebuild) és **update** (diff frissítés) függvények – performance optimalizáció
+- `G` exportálva a `state.js`-ből, minden modul importálja – by reference, mutáció azonnal látható
+- `needFullRender` objektum a `state.js`-ben él – game.js állítja, main.js olvassa/törli
+- **NE** destrukturálj primitíveket a `G`-ből importkor (`const { gold } = G` – értéket másolna!)
 
 ### Render stratégia
 - **Full render** (`renderPipeline()`, `renderOrders()`, `renderUpgrades()`): crafting completion, upgrade vásárlás, order spawn/fulfill után
-- **Diff update** (`updateResourceNumbers()`, `updateStationProgress()`, `updateOrderTimers()`): minden tick (200ms) – csak számokat frissít, nem rebuild-el DOM-ot
-- Event delegation: egyetlen `document.addEventListener('click')` – nincs per-element listener
+- **Diff update** (`updateResourceNumbers()`, `updateStationProgress()`, `updateOrderTimers()`): minden frame – csak számokat frissít, nem rebuild-el DOM-ot
+- Event delegation: per-container `addEventListener('click')` + `e.target.closest('[data-*]')` – nincs per-element listener
 
 ### Megrendelés rendszer
 - `ORDER_TEMPLATES` tömb → `spawnOrder()` szűri `minRep` alapján
@@ -124,8 +167,13 @@ gameTick() [200ms]
 
 ### Canvas animációk
 - Minden stationhoz dedikált `draw*()` függvény (ctx, w, h, active, t paraméterek)
-- `tickAnims(t)` koordinálja az összes canvas rajzolást (requestAnimationFrame)
-- `initAnimState(sid)` inicializálja az animáció state-et station ID alapján
+- `animState` objektum **modul-privát** az `animations.js`-ben (nem exportált)
+- `tickAnims(t)` az egyetlen exportált belépési pont a canvas rajzoláshoz
+- `initAnimState(sid)` lazy init – első rajzolásnál hívódik
+
+### Mobile tab kezelés
+- Régi: `onclick="showTab('...')"` inline HTML attribútum (nem működik ES module scope alatt)
+- Új: `data-tab="resources"` attribútum + `.mobile-tabs` listener az `events.js`-ben
 
 ### Naming conventions
 - Station ID-k: `'smelter'`, `'anvil'`, `'grinder'`, `'assembly'`, `'qc'`
@@ -144,41 +192,40 @@ gameTick() [200ms]
 - [x] **Megrendelés queue** – 3 frakció (Acélkarmok, Kéregmanók, Vasbosszú), rep-gated pool (0/10/25/50), 4 order típus
 - [x] **Részleges megrendelés teljesítés** – qty dots vizuális feedback, `qtyDelivered` tracking
 - [x] **Mobile-first UI** – 3 tab panel, CSS !important fix, touch-optimalizált gombok
-- [x] **Event delegation** – egyetlen document listener, nincs DOM rebuild kattintáskor
+- [x] **Event delegation** – per-container listener, nincs DOM rebuild kattintáskor
 - [x] **Canvas animációk** – mind az 5 stationhoz egyedi rajzoló (olvasztó láng, kalapácsütés, szikrák, fogaskerekek, QC scan)
 - [x] **Bottleneck vizualizáció** – warning jelzés ha a pipeline torlódik
 - [x] **Frakció respawn delay** – teljesítés után az adott frakció prioritást kap
 - [x] **iOS Safari javítás** – duplikált függvények eltávolítva
 - [x] **Nyersanyag ráta újraskálázás** – /s → közel /min érzet a jobb balance érdekében
 - [x] **GDD + Roadmap + TODO dokumentáció** – teljes tervezési dokumentáció elkészítve
+- [x] **Moduláris refaktor** – single-file → ES Modules struktúra (index.html + css/ + src/)
+- [x] **Bug fix: negatív inventory** – `consumeInv` Math.max(0) guard
+- [x] **Bug fix: sparks() null crash** – null check ha station DOM elem nem létezik
+- [x] **Bug fix: qtyDelivered null safety** – `|| 0` guard minden helyen
+- [x] **Mobile tab onclick eltávolítva** – `data-tab` + event delegation helyette
 
 ---
 
 ## Known Issues / Tech Debt
 
-### Aktív bugok (sprint)
-- `getInvCount` / `consumeInv` – negatív inventory guard hiányos (`Math.max(0)` check szükséges)
-- Megrendelés lejáratkor reputation negatívba mehet (`Math.max(0, rep - penalty)` hiányzik)
-- `needFullRender` race condition – pipeline render közben érkező új trigger esetén
-- `sparks()` – null-safe check hiányzik ha a station DOM elem nem létezik
-- `qtyDelivered` nem null-safe minden helyen
-
 ### UI/UX hibák
-- Mobilon bottleneck warning szöveg túl hosszú (⚠ BN szöveg rövidíteni kell)
+- Mobilon bottleneck warning szöveg esetleg túl hosszú (rövidítve: "⚠ BN" – ellenőrizni kell)
 - Toast üzenetek fedik a fulfill gombot mobilon
 - Canvas méretezés portrait vs. landscape módban nem konzisztens
 - Upgrade lista scroll pozíció elveszik full render után
 
 ### Tech debt
-- `var` → `const/let` migráció (kód olvashatóság) – tervezett, de nem kritikus
 - Station `inputSlots` / `outputSlots` nem frissül vizuálisan kovácsoláskor
 - iOS Safari Canvas animáció teljesítmény – FPS mérés, esetleg requestAnimationFrame throttle szükséges
+- `needFullRender` race condition – pipeline render közben érkező új trigger esetén (ritka)
 
 ---
 
 ## Session Log (last 5)
 
-- **2026-02-26**: CLAUDE.md létrehozva – projekt teljes állapotának dokumentálása (pipeline, architecture, patterns, known issues)
+- **2026-02-26 (2)**: Moduláris refaktor – single-file HTML → ES Modules projekt struktúra. Létrehozva: `index.html`, `css/style.css`, `src/state.js`, `src/helpers.js`, `src/game.js`, `src/render.js`, `src/update.js`, `src/animations.js`, `src/events.js`, `src/main.js`. Bug fixek: negatív inventory guard, sparks() null check, qtyDelivered null safety, inline onclick eltávolítva.
+- **2026-02-26 (1)**: CLAUDE.md létrehozva – projekt teljes állapotának dokumentálása (pipeline, architecture, patterns, known issues)
 
 ---
 
@@ -186,7 +233,7 @@ gameTick() [200ms]
 
 | Fázis | Tartalom | Státusz |
 |---|---|---|
-| **MVP (Fázis 0)** | Core pipeline, 3 frakció, 22 upgrade, canvas animációk | 🟠 Aktív |
+| **MVP (Fázis 0)** | Core pipeline, 3 frakció, 22 upgrade, canvas animációk, moduláris struktúra | 🟠 Aktív |
 | **Beta v1 (Fázis 1)** | Staff, offline progress, prestige alap, 5 frakció, IndexedDB, PWA | ⬜ Tervezett |
 | **Launch v1.0 (Fázis 2)** | Leaderboard, backend (Node+PG+Redis), monetizáció, skin shop | ⬜ Tervezett |
 | **v1.1 (Fázis 3)** | Heti eventek, új receptek, volframit, 2 extra frakció | ⬜ Tervezett |
@@ -194,6 +241,6 @@ gameTick() [200ms]
 
 ## Tervezett Tech Stack (teljes)
 
-**MVP (jelenlegi):** Vanilla JS (ES5), HTML5 Canvas, CSS3 + CSS Variables
+**MVP (jelenlegi):** Vanilla JS (ES Modules), HTML5 Canvas, CSS3 + CSS Variables, lokális szerver
 **Beta v1:** + IndexedDB, Service Worker (PWA), Web Workers
 **Launch:** + Node.js + Express, PostgreSQL, Redis, JWT, Google AdSense/AdMob
