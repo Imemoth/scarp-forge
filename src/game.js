@@ -86,7 +86,8 @@ export function fulfillOrder(id) {
 
   // teljes teljesítés
   const timerRatio = order.timeLeft / order.totalTime;
-  const earned     = Math.floor(order.reward * (timerRatio > 0.5 ? 1.2 : 1.0));
+  const mult   = timerRatio > 0.75 ? 1.5 : timerRatio > 0.5 ? 1.2 : 1.0;
+  const earned = Math.floor(order.reward * mult);
   G.gold      += earned;
   G.reputation += order.type === 'vip' ? 15 : order.type === 'urgent' ? 7 : 3;
   G.totalCrafted++;
@@ -98,7 +99,8 @@ export function fulfillOrder(id) {
   if (delay === 0) { spawnOrder(faction); }
   else { setTimeout(() => spawnOrder(faction), delay); }
 
-  toast('✓ ' + order.product + ' kész! +' + earned + ' arany', 'success');
+  const bonus = mult > 1.0 ? ' ⚡×' + mult.toFixed(1) : '';
+  toast('✓ ' + order.product + ' kész! +' + earned + ' arany' + bonus, 'success');
   needFullRender.orders = true;
   saveGame();
 }
@@ -113,7 +115,7 @@ export function buyUpgrade(uid) {
     const key = u.target + 'Speed';
     G.multipliers[key] = (G.multipliers[key] || 1) * u.mult;
   }
-  if (u.effect === 'coalRate')     G.resources.coal.baseRate += 0.005;
+  if (u.effect === 'coalRate')     G.resources.coal.baseRate += 0.02;
   if (u.effect === 'scrapQuality') G.multipliers.scrapQuality = (G.multipliers.scrapQuality || 0) + 1;
   if (u.effect === 'storageUp')    { for (const k in G.resources) G.resources[k].max = Math.floor(G.resources[k].max * 1.5); }
   if (u.effect === 'allQuality')   G.multipliers.allQuality = (G.multipliers.allQuality || 0) + 1;

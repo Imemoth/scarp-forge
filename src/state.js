@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════
 
 export const G = {
-  gold: 150,
+  gold: 120,
   reputation: 0,
   totalCrafted: 0,
   day: 1,
@@ -11,18 +11,18 @@ export const G = {
   tick: 0,
 
   resources: {
-    scrap:  { name:'Fémhulladék', icon:'🔩', val:20, max:200, quality:45, baseRate:0.15 },
-    coal:   { name:'Szén/Koksz',  icon:'🪨', val:15, max:150, quality:60, baseRate:0.06 },
-    wood:   { name:'Fa / Nyél',   icon:'🪵', val:10, max:100, quality:55, baseRate:0.04 },
-    binder: { name:'Szurok',      icon:'⬛', val:5,  max:80,  quality:50, baseRate:0.015 }
+    scrap:  { name:'Fémhulladék', icon:'🔩', val:20, max:200, quality:45, baseRate:0.20 },
+    coal:   { name:'Szén/Koksz',  icon:'🪨', val:15, max:150, quality:60, baseRate:0.08 },
+    wood:   { name:'Fa / Nyél',   icon:'🪵', val:10, max:100, quality:55, baseRate:0.05 },
+    binder: { name:'Szurok',      icon:'⬛', val:5,  max:80,  quality:50, baseRate:0.02 }
   },
 
   stations: [
-    { id:'smelter',  name:'OLVASZTÓ',         icon:'🔥', sub:'Scrap → Fémtömb',        locked:false, active:false, progress:0, progressMax:3000,  inputSlots:[null,null], outputSlots:[null],      inputReq:{scrap:5,coal:2},       outputItem:{name:'Fémtömb',icon:'🧱',quality:0},          description:'3s',  bottleneck:false },
-    { id:'anvil',    name:'KOVÁCSÁLLVÁNY',     icon:'⚒', sub:'Fémtömb → Alkatrész',    locked:false, active:false, progress:0, progressMax:8000,  inputSlots:[null,null], outputSlots:[null,null], inputReq:{ingot:1},              outputItem:{name:'Alkatrész',icon:'⚙️',quality:0},        description:'8s',  bottleneck:false },
-    { id:'grinder',  name:'CSISZOLÓ / EDZŐ',  icon:'⚡', sub:'Alkatrész → Edzett',     locked:true,  active:false, progress:0, progressMax:14000, inputSlots:[null],       outputSlots:[null],      inputReq:{part:1},               outputItem:{name:'Edzett rész',icon:'🗡️',quality:0},      description:'14s', bottleneck:false },
-    { id:'assembly', name:'ÖSSZESZERELÓ',      icon:'🔧', sub:'Edzett + Nyél → Termék', locked:true,  active:false, progress:0, progressMax:22000, inputSlots:[null,null], outputSlots:[null,null], inputReq:{hardened:1,wood:2},    outputItem:{name:'Kész Fegyver',icon:'⚔️',quality:0},     description:'22s', bottleneck:false },
-    { id:'qc',       name:'QC ÁLLOMÁS',        icon:'🔍', sub:'Minőség ellenőrzés',     locked:true,  active:false, progress:0, progressMax:10000, inputSlots:[null],       outputSlots:[null],      inputReq:{product:1},            outputItem:{name:'Ellenőrzött',icon:'✅',quality:0},       description:'10s', bottleneck:false }
+    { id:'smelter',  name:'OLVASZTÓ',         icon:'🔥', sub:'Scrap → Fémtömb',        locked:false, active:false, progress:0, progressMax:30000,  inputSlots:[null,null], outputSlots:[null],      inputReq:{scrap:5,coal:2},       outputItem:{name:'Fémtömb',icon:'🧱',quality:0},          description:'30s',  bottleneck:false },
+    { id:'anvil',    name:'KOVÁCSÁLLVÁNY',     icon:'⚒', sub:'Fémtömb → Alkatrész',    locked:false, active:false, progress:0, progressMax:60000,  inputSlots:[null,null], outputSlots:[null,null], inputReq:{ingot:1},              outputItem:{name:'Alkatrész',icon:'⚙️',quality:0},        description:'60s',  bottleneck:false },
+    { id:'grinder',  name:'CSISZOLÓ / EDZŐ',  icon:'⚡', sub:'Alkatrész → Edzett',     locked:true,  active:false, progress:0, progressMax:120000, inputSlots:[null],       outputSlots:[null],      inputReq:{part:1},               outputItem:{name:'Edzett rész',icon:'🗡️',quality:0},      description:'2m',   bottleneck:false },
+    { id:'assembly', name:'ÖSSZESZERELÓ',      icon:'🔧', sub:'Edzett + Nyél → Termék', locked:true,  active:false, progress:0, progressMax:180000, inputSlots:[null,null], outputSlots:[null,null], inputReq:{hardened:1,wood:2},    outputItem:{name:'Kész Fegyver',icon:'⚔️',quality:0},     description:'3m',   bottleneck:false },
+    { id:'qc',       name:'QC ÁLLOMÁS',        icon:'🔍', sub:'Minőség ellenőrzés',     locked:true,  active:false, progress:0, progressMax:90000,  inputSlots:[null],       outputSlots:[null],      inputReq:{product:1},            outputItem:{name:'Ellenőrzött',icon:'✅',quality:0},       description:'90s',  bottleneck:false }
   ],
 
   inventory: { ingot:0, part:0, hardened:0, product:0 },

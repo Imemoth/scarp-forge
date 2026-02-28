@@ -1,5 +1,5 @@
 # Project: Scrap Forge
-_Last updated: 2026-02-26 (IndexedDB persistence)_
+_Last updated: 2026-02-28 (balance hangolás)_
 
 > Posztapokaliptikus Kovácsműhely Idle Szimulátor – böngészőalapú, moduláris HTML5/JS játék.
 
@@ -21,8 +21,8 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 ## Current State
 
 **Fázis:** MVP aktív fejlesztés (Fázis 0)
-**Státusz:** IndexedDB perzisztencia kész – játékállás megmarad újratöltés után
-**Következő:** Balance finomhangolás, iOS Safari tesztelés, offline progress számítás
+**Státusz:** Balance hangolás kész – station idők ×10, nyersanyag ráták finomhangolva, 3-tier order reward
+**Következő:** iOS Safari tesztelés, offline progress számítás
 
 ### Ami működik
 - Teljes 5-állomásos gyártási lánc (Olvasztó → Kovácsállvány → Csiszoló → Összeszereló → QC)
@@ -32,6 +32,7 @@ Session végén explicit prompt: _"Update CLAUDE.md with everything we did today
 - Auto-save 30 másodpercenként + mentés upgrade vásárlásnál és megrendelés teljesítésnél
 - `↺` Új játék gomb headerben (confirm dialóg + IndexedDB törlés + reload)
 - Betöltéskor `💾 Játék betöltve!` toast; első indulásnál normál welcome toast
+- **Balance**: station idők ×10 (30s–3min), nyersanyag ráták +33%, 3-tier order jutalom (×1.5/×1.2/×1.0), u_g3 szén +0.02/s
 - 3 frakció megrendelés rendszer rep-gating-gel (0 / 10 / 25 / 50 rep threshold)
 - 22 upgrade, állomásonként csoportosítva
 - Részleges megrendelés teljesítés (qty dots vizuális feedback)
@@ -237,6 +238,7 @@ gameTick() [requestAnimationFrame, ~200ms dt cap]
 
 ## Session Log (last 5)
 
+- **2026-02-28**: Balance hangolás – `src/state.js`: progressMax ×10 (30s/60s/2m/3m/90s), baseRate +33% (scrap 0.20, coal 0.08, wood 0.05, binder 0.02), starting gold 150→120. `src/game.js`: coalRate upgrade +0.005→+0.02, order reward 3-tier (>75%: ×1.5, >50%: ×1.2, ≤50%: ×1.0) + szorzó megjelenik a toast-ban.
 - **2026-02-26 (3)**: IndexedDB perzisztencia – `src/storage.js` létrehozva (openDB, saveGame, loadGame, resetGame). Módosítva: `game.js` (saveGame hívás fulfillOrder + buyUpgrade végén), `main.js` (async init, await loadGame, 30s auto-save timer), `events.js` (↺ reset gomb listener), `index.html` (reset gomb + save indikátor a headerben), `css/style.css` (reset gomb + #save-indicator stílus).
 - **2026-02-26 (2)**: Moduláris refaktor – single-file HTML → ES Modules projekt struktúra. Létrehozva: `index.html`, `css/style.css`, `src/state.js`, `src/helpers.js`, `src/game.js`, `src/render.js`, `src/update.js`, `src/animations.js`, `src/events.js`, `src/main.js`. Bug fixek: negatív inventory guard, sparks() null check, qtyDelivered null safety, inline onclick eltávolítva.
 - **2026-02-26 (1)**: CLAUDE.md létrehozva – projekt teljes állapotának dokumentálása (pipeline, architecture, patterns, known issues)
